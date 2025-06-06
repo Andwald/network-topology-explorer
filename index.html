@@ -1,13 +1,27 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="UTF-8" />
-    <title>Network Topology Explorer</title>
-    <link rel="stylesheet" href="style.css" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
-  </head>
-  <body>
-    <main></main>
-    <script src="sketch.js"></script>
-  </body>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>Network Topology Explorer</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://unpkg.com/delaunator@5.0.0/delaunator.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+</head>
+<body>
+  <div id="app">
+    <!-- Hier wird das UI hineingerendert -->
+    <div id="ui"></div>
+    <!-- Hier wird das p5.js-Canvas eingefügt -->
+    <div id="canvas-container"></div>
+  </div>
+
+  <!-- Skripte einbinden -->
+  <script src="utils/jsonIO.js"></script>
+  <script src="ui/controls.js"></script>
+  <script src="ui/hint.js"></script>
+  <script src="ui/nodes.js"></script>
+  <script src="topologies/topologyRenderer.js"></script>
+  <script src="algorithms/processor.js"></script>
+  <script src="main.js"></script>
+</body>
 </html>
