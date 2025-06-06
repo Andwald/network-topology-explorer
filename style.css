@@ -1,16 +1,21 @@
-body {
-  margin: 0;
+#ui {
   font-family: sans-serif;
-  background: #fafafa;
+  font-size: 14px;
 }
 
-h2 {
+#ui h2 {
   margin: 0;
-  font-size: 20px;
-  position: absolute;
-  top: 10px;
-  left: 160px;
-  background-color: #e0e0e0; /* hellgrau */
-  padding: 5px 10px;
-  border-radius: 4px;
+}
+
+button {
+  font-size: 14px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+input[type="file"] {
+  min-width: 200px;
+  max-width: 100%;
+  font-size: 14px;
+  grid-column: span 2;
 }
