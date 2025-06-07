@@ -23,3 +23,39 @@ html, body {
   flex-grow: 1;
   position: relative;
 }
+
+/* Info-Box Standard */
+#info-box {
+  font-family: sans-serif;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  background: #fafafa;
+  border-top: 1px solid #ccc;
+  padding: 10px;
+}
+
+/* Titel */
+#info-box .info-title {
+  margin: 0 0 6px;
+  font-size: 1.1rem;
+  font-weight: bold;
+}
+
+/* Beschreibung */
+#info-box .info-desc {
+  margin: 0 0 8px;
+}
+
+/* Listen (Pros/Cons) */
+#info-box ul {
+  margin: 4px 0 8px 20px;
+  padding: 0;
+}
+
+#info-box ul li {
+  margin-bottom: 2px;
+}
+
+/* Pros grün, Cons rot */
+#info-box .pros { color: #2a7f2a; margin: 4px 0; }
+#info-box .cons { color: #a22a2a; margin: 0; }

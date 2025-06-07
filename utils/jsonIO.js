@@ -48,6 +48,7 @@ function importFromJSON(file) {
   // Alte Knoten und Parent-Arrays löschen
   nodes = [];
   randomParents = [];
+  randEdges = [];
 
   // Topologie intern setzen und Dropdown synchronisieren
   if (typeof data.topology === "string") {

@@ -1,3 +1,5 @@
+const gridSize = 200; // Pixel-Abstand der Gitterpunkte
+const threshold = 100; // Distanz-Schwellenwert in Pixeln für RGG
 
 function drawTopology(name) {
   switch (name) {
@@ -5,7 +7,7 @@ function drawTopology(name) {
     case "star": drawStarTopology(); break;
     case "binary tree": drawBinaryTree(); break;
     case "random tree": drawRandomTree(); break;
-    case "nearest tree": drawNearestTree(); break;
+    case "nnt": drawNearestTree(); break;
     case "complete": drawCompleteGraph(); break;
     case "path": drawPathTopology(); break;
     case "emst": drawEMST(); break;
@@ -14,9 +16,8 @@ function drawTopology(name) {
     case "delaunay": drawDelaunay(); break;
     case "grid": drawGridGraph(); break;
     case "rgg": drawRandomGeometricGraph(); break;
-    case "k-nearest": drawKNearestGraph(3); break;
+    case "k-nn graph": drawKNearestGraph(3); break;
     case "convex hull": drawConvexHull(); break;
-    case "clustered": drawClusteredGraph(3); break;
     case "chordal ring": drawChordalRing(); break;
     case "layered": drawLayeredGraph(3); break;
     case "random weighted": drawRandomWeightedGraph(); break;
@@ -211,8 +212,6 @@ function drawDelaunay() {
   });
 }
 
-const gridSize = 50; // Pixel-Abstand der Gitterpunkte
-
 function drawGridGraph() {
   // 1) Knoten im Checker-Raster „snappen“:
   const snapped = nodes.map(n => ({
@@ -237,7 +236,6 @@ function drawGridGraph() {
   }
 }
 
-const threshold = 100; // Distanz-Schwellenwert in Pixeln
 
 function drawRandomGeometricGraph() {
   stroke(100);
@@ -304,94 +302,25 @@ function drawConvexHull() {
   }
 }
 
-// Pseudocode, p5.js-optimiert würde etwas anders aussehen.
-function drawClusteredGraph(kClust = 3) {
-  if (nodes.length === 0) return;
-  // 1) initiale Zentren zufällig wählen
-  const centroids = [];
-  for (let i = 0; i < kClust; i++) {
-    const rnd = random(nodes);
-    centroids.push({ x: rnd.x, y: rnd.y });
-  }
-  let labels = new Array(nodes.length).fill(0);
-  let changed = true;
-  // 2) k-Means iterieren (max. 10 Durchläufe)
-  for (let iter = 0; iter < 10 && changed; iter++) {
-    changed = false;
-    // a) Punkte zuweisen
-    for (let i = 0; i < nodes.length; i++) {
-      let minD = Infinity, best = 0;
-      for (let c = 0; c < kClust; c++) {
-        const d = dist(nodes[i].x, nodes[i].y, centroids[c].x, centroids[c].y);
-        if (d < minD) {
-          minD = d; best = c;
-        }
-      }
-      if (labels[i] !== best) {
-        labels[i] = best;
-        changed = true;
-      }
-    }
-    // b) Zentroiden neu berechnen
-    for (let c = 0; c < kClust; c++) {
-      let sumX = 0, sumY = 0, count = 0;
-      for (let i = 0; i < nodes.length; i++) {
-        if (labels[i] === c) {
-          sumX += nodes[i].x;
-          sumY += nodes[i].y;
-          count++;
-        }
-      }
-      if (count > 0) {
-        centroids[c].x = sumX / count;
-        centroids[c].y = sumY / count;
-      }
-    }
-  }
-  // 3) innerhalb jedes Clusters komplette Verbindungen zeichnen
-  stroke(100);
-  for (let i = 0; i < nodes.length; i++) {
-    for (let j = i + 1; j < nodes.length; j++) {
-      if (labels[i] === labels[j]) {
-        line(nodes[i].x, nodes[i].y, nodes[j].x, nodes[j].y);
-      }
-    }
-  }
-  // Optional: Zentroiden als farbige Punkte anzeigen
-  noStroke();
-  for (let c = 0; c < kClust; c++) {
-    fill(color(`hsl(${(c * 360 / kClust)}, 80%, 60%)`));
-    ellipse(centroids[c].x, centroids[c].y, 12, 12);
-  }
-}
-
 function drawChordalRing() {
   const n = nodes.length;
   if (n < 3) return;
-  // 1) Mittelpunkt berechnen
-  let cx = 0, cy = 0;
-  for (let p of nodes) {
-    cx += p.x; cy += p.y;
-  }
-  cx /= n; cy /= n;
-  // 2) Array mit {idx, angle} füllen
-  const arr = nodes.map((p, i) => ({
-    idx: i,
-    angle: atan2(p.y - cy, p.x - cx)
-  }));
-  arr.sort((a, b) => a.angle - b.angle);
-  // 3) Normales Ring-Heizen + „Chord“-Verbindung
-  stroke(100);
   const step = Math.floor(n / 2);
+  stroke(100);
   for (let i = 0; i < n; i++) {
-    const curr = arr[i].idx;
-    const next = arr[(i + 1) % n].idx;
-    line(nodes[curr].x, nodes[curr].y, nodes[next].x, nodes[next].y);
-    // Chord zum Knoten in fixer Schrittweite
-    const chord = arr[(i + step) % n].idx;
-    line(nodes[curr].x, nodes[curr].y, nodes[chord].x, nodes[chord].y);
+    // immer den Ring zeichnen
+    const next = (i + 1) % n;
+    line(nodes[i].x, nodes[i].y, nodes[next].x, nodes[next].y);
+
+    // den Chord nur einmal pro Paar zeichnen
+    const chord = (i + step) % n;
+    if (n % 2 === 1 || i < chord) {
+      // bei ungeradem n immer, bei geradem n nur, wenn i < chord
+      line(nodes[i].x, nodes[i].y, nodes[chord].x, nodes[chord].y);
+    }
   }
 }
+
 
 function drawLayeredGraph(numLayers = 3) {
   stroke(100);
@@ -408,15 +337,9 @@ function drawLayeredGraph(numLayers = 3) {
   }
 }
 
-const p = 0.2; // 20 % Chance pro Knotenpaar
-
 function drawRandomWeightedGraph() {
   stroke(100);
-  for (let i = 0; i < nodes.length; i++) {
-    for (let j = i + 1; j < nodes.length; j++) {
-      if (random() < p) {
-        line(nodes[i].x, nodes[i].y, nodes[j].x, nodes[j].y);
-      }
-    }
-  }
+  randEdges.forEach(({ i, j }) => {
+    line(nodes[i].x, nodes[i].y, nodes[j].x, nodes[j].y);
+  });
 }

@@ -1,5 +1,5 @@
 let topologySel, algorithmSel;
-let fileInput; // <<< hier neu
+let fileInput; 
 
 function setupUI() {
   const ui = select("#ui");
@@ -16,13 +16,15 @@ function setupUI() {
 
   // Topology-Select
   topologySel = createSelect();
-  ["Ring", "Star", "Binary Tree", "Random Tree", "Nearest Tree", "Complete", "Path", "EMST", "Gabriel", "RNG", "Delaunay", "Grid", "RGG", "K-Nearest", "Convex Hull", "Clustered", "Chordal Ring", "Layered", "Random Weighted"]
+  ["Ring", "Path", "Star", "Binary Tree", "Random Tree", "NNT", "Complete", "EMST", "Gabriel", "RNG", "Delaunay", "Grid", "RGG", "k-NN Graph", "Convex Hull", "Chordal Ring", "Layered", "Random Weighted"]
     .forEach(opt => topologySel.option(opt));
   topologySel.selected("Ring");
   topologySel.changed(() => {
     topology = topologySel.value().toLowerCase();
     nodes = [];
     randomParents = [];
+    randEdges = []; 
+    showTopologyInfo(topology);
   });
   topologySel.parent(ui);
 
@@ -51,6 +53,7 @@ function setupUI() {
   resetBtn.mousePressed(() => {
     nodes = [];
     randomParents = [];
+    randEdges = [];
   });
   resetBtn.parent(ui);
 
@@ -67,4 +70,6 @@ function setupUI() {
   const importBtn = createButton("📂 Import JSON");
   importBtn.mousePressed(() => fileInput.elt.click());
   importBtn.parent(ui);
+
+  showTopologyInfo(topologySel.value().toLowerCase());
 }
