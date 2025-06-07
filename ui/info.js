@@ -43,7 +43,7 @@ const topologyInfo = {
     cons: ["High diameter", "No cycle"]
   },
   "emst": {
-    title: "Euclidean MST",
+    title: "Euclidean Minimum Spanning Tree",
     desc: "Minimum spanning tree via Kruskal or Prim—minimizes total edge length.",
     pros: ["Globally optimal tree"],
     cons: ["O(N²) comparisons", "Batch computation"]
@@ -53,12 +53,6 @@ const topologyInfo = {
     desc: "Maximizes minimum angles in triangles; dual of Voronoi diagram.",
     pros: ["Well-shaped triangles", "Basis for many algorithms"],
     cons: ["Computationally heavy", "Not a tree"]
-  },
-   "nearest neighbor tree": {
-    title: "Nearest Neighbor Tree",
-    desc: "Greedy: each new node connects to the closest existing node.",
-    pros: ["Locally efficient", "Often results in short total edge length"],
-    cons: ["Can produce poor branching", "No global optimality guarantee"]
   },
   "gabriel": {
     title: "Gabriel Graph",
@@ -78,8 +72,8 @@ const topologyInfo = {
     pros: ["Structured layout", "Simple neighbor logic"],
     cons: ["Depends on grid size", "May distort true distances"]
   },
-  "rgg": {
-    title: "Random Geometric Graph",
+  "gg": {
+    title: "Geometric Graph",
     desc: "Connects pairs whose Euclidean distance ≤ threshold r.",
     pros: ["Models wireless/adhoc networks", "Intuitive radius parameter"],
     cons: ["Edge count sensitive to r", "Requires O(N²) distance tests"]
@@ -90,29 +84,11 @@ const topologyInfo = {
     pros: ["Controls local connectivity", "Reflects clustering structure"],
     cons: ["Needs sorting distances", "May be asymmetric"]
   },
-  "convex hull": {
-    title: "Convex Hull",
-    desc: "Connects nodes on the convex hull in cyclic order.",
-    pros: ["Highlights boundary points", "O(N log N) algorithms exist"],
-    cons: ["Ignores interior nodes", "Not a spanning structure"]
-  },
   "chordal ring": {
     title: "Chordal Ring",
     desc: "Ring plus fixed-step chords based on node indices.",
     pros: ["Improves diameter over simple ring", "Regular topology"],
     cons: ["Assumes circular ordering", "Chaotic on arbitrary layouts"]
-  },
-  "layered": {
-    title: "Layered Graph",
-    desc: "Assigns nodes to layers and connects within and between adjacent layers.",
-    pros: ["Represents hierarchies", "Clear layer separation"],
-    cons: ["Requires layer assignment", "Layout may overlap layers"]
-  },
-  "random weighted": {
-    title: "Random Weighted Graph",
-    desc: "Adds each possible edge with probability p.",
-    pros: ["Simple Erdős–Rényi model", "Controls density via p"],
-    cons: ["High variance edge count", "Not spatially informed"]
   }
 };
 

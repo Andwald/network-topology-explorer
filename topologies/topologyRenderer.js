@@ -1,5 +1,6 @@
-const gridSize = 200; // Pixel-Abstand der Gitterpunkte
 const threshold = 100; // Distanz-Schwellenwert in Pixeln für RGG
+const gridSize = 100; // Pixel-Abstand der Grid-Slots
+let occupied = {};     // Map "gx,gy" → true
 
 function drawTopology(name) {
   switch (name) {
@@ -15,12 +16,9 @@ function drawTopology(name) {
     case "rng": drawRelativeNeighborhoodGraph(); break;
     case "delaunay": drawDelaunay(); break;
     case "grid": drawGridGraph(); break;
-    case "rgg": drawRandomGeometricGraph(); break;
+    case "gg": drawGeometricGraph(); break;
     case "k-nn graph": drawKNearestGraph(3); break;
-    case "convex hull": drawConvexHull(); break;
     case "chordal ring": drawChordalRing(); break;
-    case "layered": drawLayeredGraph(3); break;
-    case "random weighted": drawRandomWeightedGraph(); break;
   }
 }
 
@@ -213,31 +211,30 @@ function drawDelaunay() {
 }
 
 function drawGridGraph() {
-  // 1) Knoten im Checker-Raster „snappen“:
-  const snapped = nodes.map(n => ({
-    gx: Math.round(n.x / gridSize),
-    gy: Math.round(n.y / gridSize),
-    orig: n
-  }));
-  // 2) Nachbarn finden (4‐Nachbarschaft):
   stroke(100);
-  for (let i = 0; i < snapped.length; i++) {
-    for (let j = i + 1; j < snapped.length; j++) {
-      const a = snapped[i], b = snapped[j];
-      // Nur verbinden, wenn (gx,gy) sich um genau 1 in einer Achse unterscheidet
-      if (
-        ((a.gx === b.gx) && (Math.abs(a.gy - b.gy) === 1)) ||
-        ((a.gy === b.gy) && (Math.abs(a.gx - b.gx) === 1))
-      ) {
-        // Zeichne Linie zwischen den Original-Koordinaten beider Knoten
-        line(a.orig.x, a.orig.y, b.orig.x, b.orig.y);
-      }
+
+  // Knoten sind schon richtig gecached in nodes[i].gx/.gy und .x/.y
+  // Wir können optional erst sortieren, muss aber nicht.
+  // Jetzt für jeden Knoten die 4 möglichen Nachbarn überprüfen:
+  for (let { gx, gy, x, y } of nodes) {
+    // rechts
+    let key = `${gx+1},${gy}`;
+    if (occupied[key]) {
+      const n = nodes.find(n => n.gx === gx+1 && n.gy === gy);
+      line(x, y, n.x, n.y);
     }
+    // unten
+    key = `${gx},${gy+1}`;
+    if (occupied[key]) {
+      const n = nodes.find(n => n.gx === gx && n.gy === gy+1);
+      line(x, y, n.x, n.y);
+    }
+    // (optional) links/oben, wenn Du jede Kante doppelt oder in spezifischer Reihenfolge willst
   }
 }
 
 
-function drawRandomGeometricGraph() {
+function drawGeometricGraph() {
   stroke(100);
   for (let i = 0; i < nodes.length; i++) {
     for (let j = i + 1; j < nodes.length; j++) {
@@ -249,56 +246,22 @@ function drawRandomGeometricGraph() {
   }
 }
 
-function drawKNearestGraph(k = 3) {
+function drawKNearestGraph() {
   stroke(100);
   for (let i = 0; i < nodes.length; i++) {
-    // 1) Array aller anderen Knoten indizieren mit Distanz
+    // Distanzen sammeln
     const dists = [];
     for (let j = 0; j < nodes.length; j++) {
       if (j === i) continue;
-      const d = dist(nodes[i].x, nodes[i].y, nodes[j].x, nodes[j].y);
-      dists.push({ idx: j, d });
+      dists.push({ idx: j, d: dist(nodes[i].x, nodes[i].y, nodes[j].x, nodes[j].y) });
     }
-    // 2) Sortieren und Top-k auswählen
+    // sortieren und Top-k auswählen
     dists.sort((a, b) => a.d - b.d);
-    const neighbours = dists.slice(0, k);
-    // 3) Kanten zeichnen
-    for (let n of neighbours) {
+    const neighbours = dists.slice(0, knnK);
+    // Kanten zeichnen
+    neighbours.forEach(n => {
       line(nodes[i].x, nodes[i].y, nodes[n.idx].x, nodes[n.idx].y);
-    }
-  }
-}
-
-function drawConvexHull() {
-  if (nodes.length < 3) return;
-  // 1) Punkteliste nach x (und y) sortieren
-  const pts = nodes.map((n, i) => ({ x: n.x, y: n.y, idx: i }));
-  pts.sort((a, b) => a.x === b.x ? a.y - b.y : a.x - b.x);
-  const cross = (o, a, b) => (a.x - o.x)*(b.y - o.y) - (a.y - o.y)*(b.x - o.x);
-
-  const lower = [];
-  for (let p of pts) {
-    while (lower.length >= 2 && cross(lower[lower.length-2], lower[lower.length-1], p) <= 0) {
-      lower.pop();
-    }
-    lower.push(p);
-  }
-  const upper = [];
-  for (let i = pts.length - 1; i >= 0; i--) {
-    const p = pts[i];
-    while (upper.length >= 2 && cross(upper[upper.length-2], upper[upper.length-1], p) <= 0) {
-      upper.pop();
-    }
-    upper.push(p);
-  }
-  // Zusammensetzen (letzten Punkt jeder Liste entfernen, um Duplikat zu vermeiden)
-  const hull = lower.slice(0, -1).concat(upper.slice(0, -1));
-  // 2) Zeichnen
-  stroke(100);
-  for (let i = 0; i < hull.length; i++) {
-    const a = nodes[hull[i].idx];
-    const b = nodes[hull[(i+1) % hull.length].idx];
-    line(a.x, a.y, b.x, b.y);
+    });
   }
 }
 
@@ -319,27 +282,4 @@ function drawChordalRing() {
       line(nodes[i].x, nodes[i].y, nodes[chord].x, nodes[chord].y);
     }
   }
-}
-
-
-function drawLayeredGraph(numLayers = 3) {
-  stroke(100);
-  for (let i = 0; i < nodes.length; i++) {
-    for (let j = i + 1; j < nodes.length; j++) {
-      if (nodes[i].layer === nodes[j].layer) {
-        // Innerhalb derselben Schicht verbinden
-        line(nodes[i].x, nodes[i].y, nodes[j].x, nodes[j].y);
-      } else if (nodes[i].layer + 1 === nodes[j].layer || nodes[j].layer + 1 === nodes[i].layer) {
-        // Zwischen benachbarten Schichten verbinden
-        line(nodes[i].x, nodes[i].y, nodes[j].x, nodes[j].y);
-      }
-    }
-  }
-}
-
-function drawRandomWeightedGraph() {
-  stroke(100);
-  randEdges.forEach(({ i, j }) => {
-    line(nodes[i].x, nodes[i].y, nodes[j].x, nodes[j].y);
-  });
 }

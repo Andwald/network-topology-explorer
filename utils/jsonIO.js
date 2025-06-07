@@ -107,6 +107,7 @@ function importFromJSON(file) {
   if (typeof fileInput !== "undefined" && fileInput.elt) {
     fileInput.elt.value = "";
   }
+  redraw();
 }
 
 
