@@ -24,25 +24,25 @@ const topologyInfo = {
     pros: ["Easy", "Stochastic topology"],
     cons: ["Unpredictable path lengths", "Load spikes possible"]
   },
-  "nnt": {
+  nnt: {
     title: "Nearest Neighbor Tree",
     desc: "Greedy: each new node connects to the closest existing node.",
     pros: ["Locally efficient", "Often short total edge length"],
     cons: ["Can branch poorly", "No global optimum"]
   },
-  "complete": {
+  complete: {
     title: "Complete Graph",
     desc: "Every node connects to every other. Only sensible for very small N.",
     pros: ["Fully connected"],
     cons: ["O(N²) edges", "Not scalable"]
   },
-  "path": {
+  path: {
     title: "Path",
     desc: "Connects nodes sequentially without closing the loop.",
     pros: ["Simple sequence", "Open chain"],
     cons: ["High diameter", "No cycle"]
   },
-  "emst": {
+  emst: {
     title: "Euclidean Minimum Spanning Tree",
     desc: "Minimum spanning tree via Kruskal or Prim—minimizes total edge length.",
     pros: ["Globally optimal tree"],
@@ -66,29 +66,11 @@ const topologyInfo = {
     pros: ["Sparser than Gabriel", "Preserves nearest relations"],
     cons: ["Computationally expensive", "Not always fully connected"]
   },
-  "grid": {
-    title: "Grid Graph",
-    desc: "Snaps nodes to a fixed grid and connects 4-neighbors (up/down/left/right).",
-    pros: ["Structured layout", "Simple neighbor logic"],
-    cons: ["Depends on grid size", "May distort true distances"]
-  },
   "gg": {
     title: "Geometric Graph",
     desc: "Connects pairs whose Euclidean distance ≤ threshold r.",
     pros: ["Models wireless/adhoc networks", "Intuitive radius parameter"],
     cons: ["Edge count sensitive to r", "Requires O(N²) distance tests"]
-  },
-  "k-nn graph": {
-    title: "k-Nearest Neighbors Graph",
-    desc: "Each node connects to its k closest neighbors.",
-    pros: ["Controls local connectivity", "Reflects clustering structure"],
-    cons: ["Needs sorting distances", "May be asymmetric"]
-  },
-  "chordal ring": {
-    title: "Chordal Ring",
-    desc: "Ring plus fixed-step chords based on node indices.",
-    pros: ["Improves diameter over simple ring", "Regular topology"],
-    cons: ["Assumes circular ordering", "Chaotic on arbitrary layouts"]
   }
 };
 
@@ -109,3 +91,24 @@ function showTopologyInfo(name) {
   `;
   container.html(html);
 }
+
+
+/** TODO
+  "chordal ring": { gerade nur Schritt 1 & 2. müsste Log schritt machen
+    title: "Chordal Ring",
+    desc: "Ring plus fixed-step chords based on node indices.",
+    pros: ["Improves diameter over simple ring", "Regular topology"],
+    cons: ["Assumes circular ordering", "Chaotic on arbitrary layouts"]
+  },
+  "k-nn graph": {
+    title: "k-Nearest Neighbors Graph",
+    desc: "Each node connects to its k closest neighbors.",
+    pros: ["Controls local connectivity", "Reflects clustering structure"],
+    cons: ["Needs sorting distances", "May be asymmetric"]
+  },"grid": {
+    title: "Grid Graph",
+    desc: "Snaps nodes to a fixed grid and connects 4-neighbors (up/down/left/right).",
+    pros: ["Structured layout", "Simple neighbor logic"],
+    cons: ["Depends on grid size", "May distort true distances"]
+  }
+ */

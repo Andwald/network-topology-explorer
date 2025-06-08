@@ -1,285 +1,309 @@
-const threshold = 100; // Distanz-Schwellenwert in Pixeln für RGG
-const gridSize = 100; // Pixel-Abstand der Grid-Slots
-let occupied = {};     // Map "gx,gy" → true
-
-function drawTopology(name) {
-  switch (name) {
-    case "ring": drawRingTopology(); break;
-    case "star": drawStarTopology(); break;
-    case "binary tree": drawBinaryTree(); break;
-    case "random tree": drawRandomTree(); break;
-    case "nnt": drawNearestTree(); break;
-    case "complete": drawCompleteGraph(); break;
-    case "path": drawPathTopology(); break;
-    case "emst": drawEMST(); break;
-    case "gabriel": drawGabrielGraph(); break;
-    case "rng": drawRelativeNeighborhoodGraph(); break;
-    case "delaunay": drawDelaunay(); break;
-    case "grid": drawGridGraph(); break;
-    case "gg": drawGeometricGraph(); break;
-    case "k-nn graph": drawKNearestGraph(3); break;
-    case "chordal ring": drawChordalRing(); break;
-  }
-}
-
-
-function drawRingTopology() {
-  stroke(100);
-  for (let i = 1; i < nodes.length; i++) {
-    line(nodes[i - 1].x, nodes[i - 1].y, nodes[i].x, nodes[i].y);
-  }
-  if (nodes.length > 2) {
-    line(nodes[nodes.length - 1].x, nodes[nodes.length - 1].y, nodes[0].x, nodes[0].y);
-  }
-}
-
-function drawStarTopology() {
-  if (nodes.length < 2) return;
-  stroke(100);
-  const center = nodes[0];
-  for (let i = 1; i < nodes.length; i++) {
-    line(center.x, center.y, nodes[i].x, nodes[i].y);
-  }
-}
-
-function drawBinaryTree() {
-  stroke(100);
-  for (let i = 1; i < nodes.length; i++) {
-    const parentIndex = Math.floor((i - 1) / 2);
-    line(nodes[i].x, nodes[i].y, nodes[parentIndex].x, nodes[parentIndex].y);
-  }
-}
-
-function drawRandomTree() {
-  stroke(100);
-  for (let i = 1; i < nodes.length; i++) {
-    const parentIndex = randomParents[i];
-    if (parentIndex !== null) {
-      line(nodes[i].x, nodes[i].y, nodes[parentIndex].x, nodes[parentIndex].y);
-    }
-  }
-}
-
-function drawNearestTree() {
-  stroke(100);
-  for (let i = 1; i < nodes.length; i++) {
-    let closest = null;
-    let minDist = Infinity;
-    for (let j = 0; j < i; j++) {
-      const d = dist(nodes[i].x, nodes[i].y, nodes[j].x, nodes[j].y);
-      if (d < minDist) {
-        minDist = d;
-        closest = j;
-      }
-    }
-    if (closest !== null) {
-      line(nodes[i].x, nodes[i].y, nodes[closest].x, nodes[closest].y);
-    }
-  }
-}
-
-function drawCompleteGraph() {
-  stroke(100);
-  for (let i = 0; i < nodes.length; i++) {
-    for (let j = i + 1; j < nodes.length; j++) {
-      line(nodes[i].x, nodes[i].y, nodes[j].x, nodes[j].y);
-    }
-  }
-}
-
-function drawPathTopology() {
-  stroke(100);
-  for (let i = 1; i < nodes.length; i++) {
-    line(nodes[i - 1].x, nodes[i - 1].y, nodes[i].x, nodes[i].y);
-  }
-}
-
-function drawEMST() {
-  if (nodes.length < 2) return;
+// Berechnet den EMST per Prim (O(N²)), gibt Liste von {from, to}-Edges zurück.
+function computeEMSTEdges(nodesArr) {
+  const N = nodesArr.length;
+  if (N < 2) return [];
+  const visited = new Array(N).fill(false);
+  const bestDist = new Array(N).fill(Infinity);
+  const bestParent = new Array(N).fill(null);
   const edges = [];
-  // 1) Alle Paar-Kanten sammeln
-  for (let i = 0; i < nodes.length; i++) {
-    for (let j = i + 1; j < nodes.length; j++) {
-      const d = dist(nodes[i].x, nodes[i].y, nodes[j].x, nodes[j].y);
-      edges.push({ i, j, w: d });
-    }
-  }
-  // 2) Sortieren
-  edges.sort((a, b) => a.w - b.w);
-  // 3) Union-Find initialisieren
-  const parent = Array(nodes.length).fill().map((_, idx) => idx);
-  function find(u) {
-    return parent[u] === u ? u : (parent[u] = find(parent[u]));
-  }
-  function union(u, v) {
-    const ru = find(u), rv = find(v);
-    if (ru !== rv) parent[rv] = ru;
-  }
-  // 4) Kruskal’s Auswahl
-  const mst = [];
-  for (let e of edges) {
-    if (find(e.i) !== find(e.j)) {
-      mst.push(e);
-      union(e.i, e.j);
-    }
-    if (mst.length === nodes.length - 1) break;
-  }
-  // 5) Zeichnen
-  stroke(100);
-  for (let e of mst) {
-    const a = nodes[e.i], b = nodes[e.j];
-    line(a.x, a.y, b.x, b.y);
-  }
-}
 
-function drawGabrielGraph() {
-  stroke(100);
-  for (let i = 0; i < nodes.length; i++) {
-    for (let j = i + 1; j < nodes.length; j++) {
-      const ax = nodes[i].x, ay = nodes[i].y;
-      const bx = nodes[j].x, by = nodes[j].y;
-      const midX = (ax + bx) / 2;
-      const midY = (ay + by) / 2;
-      const radiusSq = sq(dist(ax, ay, bx, by) / 2);
-      let empty = true;
-      for (let k = 0; k < nodes.length; k++) {
-        if (k === i || k === j) continue;
-        const dx = nodes[k].x - midX;
-        const dy = nodes[k].y - midY;
-        if (dx*dx + dy*dy < radiusSq) {
-          empty = false;
-          break;
+  visited[0] = true;
+  // Initialisiere Distanzen vom Startknoten 0
+  for (let i = 1; i < N; i++) {
+    const dx = nodesArr[i].x - nodesArr[0].x;
+    const dy = nodesArr[i].y - nodesArr[0].y;
+    bestDist[i] = Math.hypot(dx, dy);
+    bestParent[i] = 0;
+  }
+
+  // N-1 Mal das nächste Minimal-Edge hinzufügen
+  for (let k = 1; k < N; k++) {
+    // Finde unvisited mit minimaler Distanz
+    let minD = Infinity, minIdx = -1;
+    for (let i = 0; i < N; i++) {
+      if (!visited[i] && bestDist[i] < minD) {
+        minD = bestDist[i];
+        minIdx = i;
+      }
+    }
+    // Kante parent→minIdx aufnehmen
+    edges.push({
+      from: nodesArr[bestParent[minIdx]],
+      to:   nodesArr[minIdx]
+    });
+    visited[minIdx] = true;
+    // Distanzen aktualisieren
+    for (let j = 0; j < N; j++) {
+      if (!visited[j]) {
+        const dx = nodesArr[j].x - nodesArr[minIdx].x;
+        const dy = nodesArr[j].y - nodesArr[minIdx].y;
+        const d  = Math.hypot(dx, dy);
+        if (d < bestDist[j]) {
+          bestDist[j] = d;
+          bestParent[j] = minIdx;
         }
       }
-      if (empty) {
-        line(ax, ay, bx, by);
-      }
     }
   }
+
+  return edges;
 }
 
-function drawRelativeNeighborhoodGraph() {
-  stroke(100);
-  for (let i = 0; i < nodes.length; i++) {
-    for (let j = i + 1; j < nodes.length; j++) {
-      const ax = nodes[i].x, ay = nodes[i].y;
-      const bx = nodes[j].x, by = nodes[j].y;
-      const dAB = dist(ax, ay, bx, by);
-      let allowed = true;
-      for (let k = 0; k < nodes.length; k++) {
-        if (k === i || k === j) continue;
-        const cx = nodes[k].x, cy = nodes[k].y;
-        if (dist(cx, cy, ax, ay) < dAB && dist(cx, cy, bx, by) < dAB) {
-          allowed = false;
-          break;
-        }
-      }
-      if (allowed) {
-        line(ax, ay, bx, by);
-      }
-    }
-  }
-}
-
-function drawDelaunay() {
-  if (nodes.length < 3) return;
-  // 1) Erstelle ein Array von [x, y]
-  const coords = [];
-  for (let n of nodes) {
-    coords.push([n.x, n.y]);
-  }
-  // 2) Baue Delaunator auf (global verfügbar durch <script src="…delaunator.min.js">)
-  const delaunay = Delaunator.from(coords);
-  const triangles = delaunay.triangles; // Array von Punkt-Indizes [i0, i1, i2, i3, …]
-  // 3) Sammle Kanten in einem Set (damit keine Duplikate entstehen)
+// Hilfsfunktion: berechnet alle Kanten der Delaunay-Triangulation
+function computeDelaunayEdges(nodesArr) {
+  if (nodesArr.length < 3) return [];
+  const delaunay = Delaunator.from(nodesArr.map(n => [n.x, n.y]));
   const edges = new Set();
-  for (let i = 0; i < triangles.length; i += 3) {
-    const a = triangles[i], b = triangles[i + 1], c = triangles[i + 2];
-    [ [a, b], [b, c], [c, a] ].forEach(pair => {
-      const u = pair[0], v = pair[1];
-      const key = u < v ? `${u}-${v}` : `${v}-${u}`;
+  for (let e = 0; e < delaunay.triangles.length; e += 3) {
+    const [i0, i1, i2] = [
+      delaunay.triangles[e+0],
+      delaunay.triangles[e+1],
+      delaunay.triangles[e+2]
+    ];
+    [[i0,i1],[i1,i2],[i2,i0]].forEach(([a,b]) => {
+      const key = a < b ? `${a},${b}` : `${b},${a}`;
       edges.add(key);
     });
   }
-  // 4) Zeichne alle Kanten des Delaunay-Graphen
-  stroke(100);
-  edges.forEach(key => {
-    const [u, v] = key.split('-').map(Number);
-    const p = nodes[u], q = nodes[v];
-    line(p.x, p.y, q.x, q.y);
+  return Array.from(edges).map(key => {
+    const [a,b] = key.split(",").map(Number);
+    return { from: nodesArr[a], to: nodesArr[b] };
   });
 }
 
-function drawGridGraph() {
-  stroke(100);
-
-  // Knoten sind schon richtig gecached in nodes[i].gx/.gy und .x/.y
-  // Wir können optional erst sortieren, muss aber nicht.
-  // Jetzt für jeden Knoten die 4 möglichen Nachbarn überprüfen:
-  for (let { gx, gy, x, y } of nodes) {
-    // rechts
-    let key = `${gx+1},${gy}`;
-    if (occupied[key]) {
-      const n = nodes.find(n => n.gx === gx+1 && n.gy === gy);
-      line(x, y, n.x, n.y);
-    }
-    // unten
-    key = `${gx},${gy+1}`;
-    if (occupied[key]) {
-      const n = nodes.find(n => n.gx === gx && n.gy === gy+1);
-      line(x, y, n.x, n.y);
-    }
-    // (optional) links/oben, wenn Du jede Kante doppelt oder in spezifischer Reihenfolge willst
-  }
-}
-
-
-function drawGeometricGraph() {
-  stroke(100);
-  for (let i = 0; i < nodes.length; i++) {
-    for (let j = i + 1; j < nodes.length; j++) {
-      const d = dist(nodes[i].x, nodes[i].y, nodes[j].x, nodes[j].y);
-      if (d <= threshold) {
-        line(nodes[i].x, nodes[i].y, nodes[j].x, nodes[j].y);
+// Berechnet alle Gabriel-Kanten für ein Node-Array
+function computeGabrielEdges(nodesArr) {
+  const N = nodesArr.length;
+  const edges = [];
+  for (let i = 0; i < N; i++) {
+    for (let j = i + 1; j < N; j++) {
+      const a = nodesArr[i], b = nodesArr[j];
+      // Kreis-Mittelpunkt & Radius²
+      const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+      const r2 = ((a.x - b.x)**2 + (a.y - b.y)**2) / 4;
+      // Prüfe, ob ein dritter Knoten im Innern liegt
+      let ok = true;
+      for (let k = 0; k < N; k++) {
+        if (k === i || k === j) continue;
+        const c = nodesArr[k];
+        const dx = c.x - mx, dy = c.y - my;
+        if (dx*dx + dy*dy < r2) { ok = false; break; }
+      }
+      if (ok) {
+        edges.push({ from: a, to: b });
+        // nur eine Richtung nötig, static draw ist symmetrisch
       }
     }
   }
+  return edges;
 }
 
-function drawKNearestGraph() {
-  stroke(100);
-  for (let i = 0; i < nodes.length; i++) {
-    // Distanzen sammeln
-    const dists = [];
-    for (let j = 0; j < nodes.length; j++) {
-      if (j === i) continue;
-      dists.push({ idx: j, d: dist(nodes[i].x, nodes[i].y, nodes[j].x, nodes[j].y) });
+// Berechnet alle RNG-Kanten für ein Node-Array
+function computeRNGEdges(nodesArr) {
+  const N = nodesArr.length;
+  const edges = [];
+  for (let i = 0; i < N; i++) {
+    for (let j = i + 1; j < N; j++) {
+      const a = nodesArr[i], b = nodesArr[j];
+      // Abstand A–B
+      const ab2 = (a.x - b.x)**2 + (a.y - b.y)**2;
+      let ok = true;
+      // Prüfe, ob es ein C gibt, so dass dist(C,A) < dist(A,B) && dist(C,B) < dist(A,B)
+      for (let k = 0; k < N; k++) {
+        if (k === i || k === j) continue;
+        const c = nodesArr[k];
+        const ac2 = (a.x - c.x)**2 + (a.y - c.y)**2;
+        const bc2 = (b.x - c.x)**2 + (b.y - c.y)**2;
+        if (ac2 < ab2 && bc2 < ab2) {
+          ok = false;
+          break;
+        }
+      }
+      if (ok) edges.push({ from: a, to: b });
     }
-    // sortieren und Top-k auswählen
-    dists.sort((a, b) => a.d - b.d);
-    const neighbours = dists.slice(0, knnK);
-    // Kanten zeichnen
-    neighbours.forEach(n => {
-      line(nodes[i].x, nodes[i].y, nodes[n.idx].x, nodes[n.idx].y);
-    });
   }
+  return edges;
 }
 
-function drawChordalRing() {
-  const n = nodes.length;
-  if (n < 3) return;
-  const step = Math.floor(n / 2);
-  stroke(100);
+// GG: global alle Kanten mit dist ≤ threshold
+function computeGGEdges(nodesArr, r) {
+  const r2 = r*r;
+  const edges = [];
+  const N = nodesArr.length;
+  for (let i = 0; i < N; i++) {
+    for (let j = i + 1; j < N; j++) {
+      const a = nodesArr[i], b = nodesArr[j];
+      const d2 = (a.x - b.x)**2 + (a.y - b.y)**2;
+      if (d2 <= r2) edges.push({ from: a, to: b });
+    }
+  }
+  return edges;
+}
+
+// Generiert alle Edges für einen Chordal Ring mit step d
+function computeChordalRingEdges(nodesArr, d = 2) {
+  const n = nodesArr.length;
+  const edges = [];
+  if (n < 2) return edges;
+  // 1) Ring-Kanten
   for (let i = 0; i < n; i++) {
-    // immer den Ring zeichnen
-    const next = (i + 1) % n;
-    line(nodes[i].x, nodes[i].y, nodes[next].x, nodes[next].y);
+    const j = (i + 1) % n;
+    edges.push({ from: nodesArr[i], to: nodesArr[j] });
+  }
+  // 2) Chords in Schrittweite d
+  for (let i = 0; i < n; i++) {
+    const j = (i + d) % n;
+    // nur eine Richtung, vermeide Duplikate
+    if (i < j) edges.push({ from: nodesArr[i], to: nodesArr[j] });
+  }
+  return edges;
+}
 
-    // den Chord nur einmal pro Paar zeichnen
-    const chord = (i + step) % n;
-    if (n % 2 === 1 || i < chord) {
-      // bei ungeradem n immer, bei geradem n nur, wenn i < chord
-      line(nodes[i].x, nodes[i].y, nodes[chord].x, nodes[chord].y);
+const topologyHandlers = {
+  ring: {
+    // snap ist wie gehabt: Klick-Koordinaten zurückgeben
+    snap: (mx, my) => ({ x: mx, y: my, occupiedKey: null }),
+
+    // computeEdges jetzt nur noch incremental:
+    computeEdges: (oldNodes, newNode) => {
+      // Wenn es vorher noch keinen Knoten gab, gibt’s auch keine Kanten
+      if (oldNodes.length === 0) return [];
+
+      const last = oldNodes[oldNodes.length - 1];
+      const first = oldNodes[0];
+      // genau zwei neue Kanten: last→newNode und newNode→first
+      return [
+        { from: last,    to: newNode },
+        { from: newNode, to: first   }
+      ];
+    }
+  },
+  star: {
+    // Klick-Verhalten: wie bei Ring, kein Snap-Grid
+    snap: (mx, my) => ({ x: mx, y: my, occupiedKey: null }),
+
+    // Incremental: Immer eine neue Kante von Hub (erstes Element) zum neuen Knoten
+    computeEdges: (oldNodes, newNode) => {
+      if (oldNodes.length === 0) {
+        // Erster Knoten wird Hub, keine Kante
+        return [];
+      }
+      const hub = oldNodes[0];
+      return [
+        { from: hub, to: newNode }
+      ];
+    }
+  },
+  "binary tree": {
+    // Klick-Koordinaten unverändert übernehmen
+    snap: (mx, my) => ({ x: mx, y: my, occupiedKey: null }),
+
+    // Beim Hinzufügen eines Knotens i: verknüpfe ihn mit parent floor((i–1)/2)
+    computeEdges: (oldNodes, newNode) => {
+      const i = oldNodes.length;       // neuer Index = Länge vor dem Push
+      if (i === 0) return [];          // erster Knoten = Root, keine Kante
+      const parentIdx = Math.floor((i - 1) / 2);
+      return [{ from: oldNodes[parentIdx], to: newNode }];
+    }
+  },
+  nnt: {
+    snap: (mx, my) => ({ x: mx, y: my, occupiedKey: null }),
+    computeEdges: (oldNodes, newNode) => {
+      const i = oldNodes.length;
+      if (i === 0) return [];
+      // neuen Knoten newNode mit nächstem alten Knoten verbinden
+      let bestIdx = 0;
+      let bestDist = Infinity;
+      for (let j = 0; j < i; j++) {
+        const dx = newNode.x - oldNodes[j].x;
+        const dy = newNode.y - oldNodes[j].y;
+        const d  = Math.hypot(dx, dy);
+        if (d < bestDist) {
+          bestDist = d;
+          bestIdx  = j;
+        }
+      }
+      return [{ from: oldNodes[bestIdx], to: newNode }];
+    }
+  },
+  "complete": {
+    snap: (mx, my) => ({ x: mx, y: my, occupiedKey: null }),
+    computeEdges: (oldNodes, newNode) => {
+      // für jeden alten Knoten eine Kante
+      return oldNodes.map(n => ({ from: n, to: newNode }));
+    }
+  },
+  "path": {
+    snap: (mx, my) => ({ x: mx, y: my, occupiedKey: null }),
+    computeEdges: (oldNodes, newNode) => {
+      // Wenn schon mindestens ein Knoten da, ziehe eine Kante vom letzten
+      if (oldNodes.length === 0) return [];
+      const last = oldNodes[oldNodes.length - 1];
+      return [{ from: last, to: newNode }];
+    }
+  },
+  "emst": {
+    snap: (mx, my) => ({ x: mx, y: my, occupiedKey: null }),
+    computeEdges: (oldNodes, newNode) => {
+      // full set = oldNodes plus newNode
+      return computeEMSTEdges([...oldNodes, newNode]);
+    }
+  },
+  "delaunay": {
+    snap: (mx, my) => ({ x: mx, y: my, occupiedKey: null }),
+    computeEdges: (oldNodes, newNode) => {
+      // global neu triangulieren
+      return computeDelaunayEdges([...oldNodes, newNode]);
+    }
+  },
+  "gabriel": {
+    snap: (mx, my) => ({ x: mx, y: my, occupiedKey: null }),
+    computeEdges: (oldNodes, newNode) => {
+      // baue nur die Kanten, die das neue Node betreffen
+      const prev = [...oldNodes, newNode];
+      const all = computeGabrielEdges(prev);
+      // filtere diejenigen, die newNode als Endpunkt haben
+      return all.filter(e => e.to === newNode);
+    }
+  },
+  "rng": {
+    snap: (mx, my) => ({ x: mx, y: my, occupiedKey: null }),
+    computeEdges: (oldNodes, newNode) => {
+      // global neu berechnen inkl. newNode
+      return computeRNGEdges([...oldNodes, newNode]);
+    }
+  },
+  "gg": {
+    snap:    (mx, my) => ({ x: mx, y: my, occupiedKey: null }),
+    computeEdges: (oldNodes, newNode) => {
+      // threshold r – hier Beispiel 100, passe bei Bedarf an oder
+      // binde eine UI-Komponente ein
+      const r = 100;
+      const valid = computeGGEdges([...oldNodes, newNode], r);
+      return valid.filter(e => e.to === newNode);
+    }
+  },
+  "chordal ring": {
+    snap:    (mx, my) => ({ x: mx, y: my, occupiedKey: null }),
+    computeEdges: (oldNodes, newNode) => {
+      // full rebuild für oldNodes + newNode
+      return computeChordalRingEdges([...oldNodes, newNode], 2);
     }
   }
+
+};
+
+// Hilfsfunktionen, die main.js später aufruft:
+function snapNode(mx, my) {
+  const h = topologyHandlers[topology];
+  return h ? h.snap(mx, my) : { x: mx, y: my, occupiedKey: null };
 }
+
+function computeEdges(oldNodes, newNode) {
+  const h = topologyHandlers[topology];
+  return h ? h.computeEdges(oldNodes, newNode) : [];
+}
+
+// Exponieren ins globale Namespace:
+window.snapNode = snapNode;
+window.computeEdges = computeEdges;
