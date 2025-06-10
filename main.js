@@ -14,8 +14,9 @@ window.animation = {
   current: null
 };
 let occupied = {};
-// nur nötig, wenn du die grid-Topologie benutzt
 const gridSize = 50;
+// threshold = Anzahl Knoten pro Schritt in d für Chord Ring
+window.chordThreshold = 6;
 
 // Hier die neuen Task-Generatoren einfügen:
 function enqueueNodeTask(x, y) {
@@ -347,29 +348,12 @@ function mousePressed() {
     return;
   }
   if (topology === "chordal ring") {
-    const d = 2;
-    // prevCount = Knotenzahl vor dem neuen
-    const prevCount = nodes.length - 1;
-    const newNode   = nodes[prevCount];
+      // Alle bestehenden Kanten schrumpfen lassen
+    edges.forEach(e => enqueueRemoveEdgeTask(e.from, e.to));
 
-    // 1) Alte Abschlusskante entfernen
-    if (prevCount > 1) {
-      const prevLast = nodes[prevCount - 1];
-      const first    = nodes[0];
-      enqueueRemoveEdgeTask(prevLast, first);
-      // 2) Ring: prevLast→new, new→first
-      enqueueEdgeTask(prevLast, newNode);
-      enqueueEdgeTask(newNode, first);
-    } else if (prevCount === 1) {
-      // erster Ring-Link
-      enqueueEdgeTask(nodes[0], newNode);
-    }
-
-    // 3) Chord für newNode, falls genug Knoten
-    if (prevCount >= d) {
-      const chordPeer = nodes[prevCount - d];
-      enqueueEdgeTask(chordPeer, newNode);
-    }
+    // Neu: Ring + Chords komplett neu berechnen
+    const allEdges = computeDynamicChordalRingEdges(nodes);
+    allEdges.forEach(e => enqueueEdgeTask(e.from, e.to));
 
     animation.running = true;
     loop();

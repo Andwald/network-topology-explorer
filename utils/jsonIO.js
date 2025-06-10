@@ -1,4 +1,3 @@
-
 function exportToJSON() {
   const data = {
     nodes: nodes.map((n, i) => ({
@@ -196,9 +195,8 @@ if (typeof data.topology === "string") {
     const ggEdges = computeGGEdges(nodes, r);
     ggEdges.forEach(e => enqueueEdgeTask(e.from, e.to));
   } else if (topology === "chordal ring") {
-    const d = 2;
     // kompletten Chordal Ring importieren
-    const crEdges = computeChordalRingEdges(nodes, d);
+    const crEdges = computeDynamicChordalRingEdges(nodes);
     crEdges.forEach(e => enqueueEdgeTask(e.from, e.to));
   }
 

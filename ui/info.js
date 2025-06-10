@@ -64,13 +64,19 @@ const topologyInfo = {
     title: "Relative Neighborhood Graph",
     desc: "Connects A–B only if no other node is closer to both A and B than they are to each other.",
     pros: ["Sparser than Gabriel", "Preserves nearest relations"],
-    cons: ["Computationally expensive", "Not always fully connected"]
+    cons: ["Computationally expensive"]
   },
   "gg": {
     title: "Geometric Graph",
     desc: "Connects pairs whose Euclidean distance ≤ threshold r.",
     pros: ["Models wireless/adhoc networks", "Intuitive radius parameter"],
-    cons: ["Edge count sensitive to r", "Requires O(N²) distance tests"]
+    cons: ["Edge count sensitive to r", "Requires O(N²) distance tests", "Not always connected"]
+  },
+  "chordal ring": {
+    title: "Dynamic Chordal Ring",
+    desc: "Ring plus fixed-step chords based on node count.",
+    pros: ["Improves diameter over simple ring", "Regular topology"],
+    cons: ["Assumes circular ordering", "Chaotic on arbitrary layouts"]
   }
 };
 

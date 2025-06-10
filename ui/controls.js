@@ -10,7 +10,7 @@ function setupUI() {
   ui.style("padding", "10px");
   ui.style("background", "#e0e0e0");
 
-  const speedLabel = createSpan(`Speed: ${animSpeed.toFixed(2)}`);
+  const speedLabel = createSpan(`Animationspeed: ${animSpeed.toFixed(2)}`);
   speedLabel.parent(ui);
   speedLabel.style("margin-right", "4px");
 
@@ -153,7 +153,7 @@ function setupUI() {
       // 1) Alte Kanten shrinken
       edges.forEach(e => enqueueRemoveEdgeTask(e.from, e.to));
       // 2) Ring + Chords neu aufbauen
-      const crEdges = computeChordalRingEdges(nodes, 2);
+      const crEdges = computeDynamicChordalRingEdges(nodes);
       crEdges.forEach(e => enqueueEdgeTask(e.from, e.to));
     }
 
@@ -206,8 +206,6 @@ function setupUI() {
   stepBackBtn.mousePressed(() => {
     animation.running = false;
     noLoop();
-    animation.queue   = [];
-    animation.current = null;
     // 1) Nichts tun, wenn keine Knoten da sind
     if (nodes.length === 0) return;
 
@@ -304,23 +302,11 @@ function setupUI() {
       const prevGG = computeGGEdges(prevNodes, r);
       prevGG.forEach(e => enqueueEdgeTask(e.from, e.to));
     } else if (topology === "chordal ring") {
-      const d = 2;
-      // prevNodes = Knoten vor dem Entfernen
-      // 1) Ring-Removal wie gehabt
-      if (prevNodes.length > 1) {
-        const prevLast = prevNodes[prevNodes.length - 1];
-        const first    = prevNodes[0];
-        enqueueRemoveEdgeTask(prevLast, removedNode);
-        enqueueRemoveEdgeTask(removedNode, first);
-        // Abschlusskette wiederherstellen
-        enqueueEdgeTask(prevLast, first);
-      }
-      // 2) Chord-Removal, falls vorhanden
-      const removedIndex = prevNodes.length;
-      if (removedIndex >= d) {
-        const chordPeer = prevNodes[(removedIndex - d) % prevNodes.length];
-        enqueueRemoveEdgeTask(chordPeer, removedNode);
-      }
+      // Alte Kanten wegshrinken
+      edges.forEach(e => enqueueRemoveEdgeTask(e.from, e.to));
+      // Ring + Chords neu aufbauen
+      const crEdges = computeDynamicChordalRingEdges(nodes);
+      crEdges.forEach(e => enqueueEdgeTask(e.from, e.to));
     } else {
       const created = computeEdges(prevNodes, removedNode);
       created.forEach(e => enqueueRemoveEdgeTask(e.from, e.to));

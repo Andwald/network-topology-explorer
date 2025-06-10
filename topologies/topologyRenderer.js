@@ -1,3 +1,5 @@
+
+
 // Berechnet den EMST per Prim (O(N²)), gibt Liste von {from, to}-Edges zurück.
 function computeEMSTEdges(nodesArr) {
   const N = nodesArr.length;
@@ -140,24 +142,36 @@ function computeGGEdges(nodesArr, r) {
   return edges;
 }
 
-// Generiert alle Edges für einen Chordal Ring mit step d
-function computeChordalRingEdges(nodesArr, d = 2) {
+// Berechnet Ring + einen Chord-Abstand d so, dass
+// im Worst-Case höchstens `chordThreshold` Hops nötig sind.
+function computeDynamicChordalRingEdges(nodesArr) {
   const n = nodesArr.length;
+  if (n < 2) return [];
+
   const edges = [];
-  if (n < 2) return edges;
-  // 1) Ring-Kanten
+  // 1) Standard-Ring-Kanten
   for (let i = 0; i < n; i++) {
-    const j = (i + 1) % n;
-    edges.push({ from: nodesArr[i], to: nodesArr[j] });
+    edges.push({ from: nodesArr[i], to: nodesArr[(i + 1) % n] });
   }
-  // 2) Chords in Schrittweite d
+
+  // 2) Dynamische Chord-Länge: d = ceil(n / chordThreshold), mindestens 2
+  const d = Math.max(2, Math.ceil(n / chordThreshold));
+
+  // 3) Je ein Chord von i → i+d (einfach einmal pro Paar)
   for (let i = 0; i < n; i++) {
     const j = (i + d) % n;
-    // nur eine Richtung, vermeide Duplikate
-    if (i < j) edges.push({ from: nodesArr[i], to: nodesArr[j] });
+    // nur i<j, damit jede Kante nur einmal angelegt wird
+    if (i < j) {
+      edges.push({ from: nodesArr[i], to: nodesArr[j] });
+    }
   }
+
   return edges;
 }
+
+
+
+
 
 const topologyHandlers = {
   ring: {
@@ -287,7 +301,7 @@ const topologyHandlers = {
     snap:    (mx, my) => ({ x: mx, y: my, occupiedKey: null }),
     computeEdges: (oldNodes, newNode) => {
       // full rebuild für oldNodes + newNode
-      return computeChordalRingEdges([...oldNodes, newNode], 2);
+      return computeDynamicChordalRingEdges([...oldNodes, newNode]);
     }
   }
 
