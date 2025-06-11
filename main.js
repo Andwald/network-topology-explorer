@@ -210,7 +210,7 @@ function mousePressed() {
     loop();
     return;
   }
-  if (topology === "binary tree") {
+  if (topology === "binary-tree") {
     const prevCount = nodes.length - 1;
     const newNode = nodes[prevCount];
     if (prevCount > 0) {
@@ -222,7 +222,7 @@ function mousePressed() {
     loop();
     return;
   }
-  if (topology === "random tree") {
+  if (topology === "random-tree") {
     const prevCount = nodes.length - 1;     // Knotenzahl vor dem neuen
     const newNode   = nodes[prevCount];     // das frisch gepushte Objekt
 
@@ -347,7 +347,7 @@ function mousePressed() {
     loop();
     return;
   }
-  if (topology === "chordal ring") {
+  if (topology === "chordal-ring") {
       // Alle bestehenden Kanten schrumpfen lassen
     edges.forEach(e => enqueueRemoveEdgeTask(e.from, e.to));
 

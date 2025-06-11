@@ -17,13 +17,3 @@ function drawNodes() {
     }
   }
 }
-
-function addNode(x, y) {
-  nodes.push({ x, y });
-  if (topology === "random tree" && nodes.length > 1) {
-    const parentIndex = Math.floor(Math.random() * (nodes.length - 1));
-    randomParents.push(parentIndex);
-  } else {
-    randomParents.push(null);
-  }
-}

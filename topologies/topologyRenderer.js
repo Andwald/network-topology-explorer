@@ -157,18 +157,14 @@ function computeDynamicChordalRingEdges(nodesArr) {
   // 2) Dynamische Chord-Länge: d = ceil(n / chordThreshold), mindestens 2
   const d = Math.max(2, Math.ceil(n / chordThreshold));
 
-  // 3) Je ein Chord von i → i+d (einfach einmal pro Paar)
+  // 3) Chords: für jeden Knoten i eine Kante zu (i + d) mod n (inkl. Wrap-around)
   for (let i = 0; i < n; i++) {
     const j = (i + d) % n;
-    // nur i<j, damit jede Kante nur einmal angelegt wird
-    if (i < j) {
-      edges.push({ from: nodesArr[i], to: nodesArr[j] });
-    }
+    edges.push({ from: nodesArr[i], to: nodesArr[j] });
   }
 
   return edges;
 }
-
 
 
 
@@ -208,7 +204,7 @@ const topologyHandlers = {
       ];
     }
   },
-  "binary tree": {
+  "binary-tree": {
     // Klick-Koordinaten unverändert übernehmen
     snap: (mx, my) => ({ x: mx, y: my, occupiedKey: null }),
 
@@ -297,7 +293,7 @@ const topologyHandlers = {
       return valid.filter(e => e.to === newNode);
     }
   },
-  "chordal ring": {
+  "chordal-ring": {
     snap:    (mx, my) => ({ x: mx, y: my, occupiedKey: null }),
     computeEdges: (oldNodes, newNode) => {
       // full rebuild für oldNodes + newNode

@@ -1,3 +1,4 @@
+// Export current network state as JSON
 function exportToJSON() {
   const data = {
     nodes: nodes.map((n, i) => ({
@@ -14,16 +15,20 @@ function exportToJSON() {
   const json = JSON.stringify(data, null, 2);
   const blob = new Blob([json], { type: "application/json" });
   const url = URL.createObjectURL(blob);
-  const a = createA(url, "network_export.json");
-  a.attribute("download", "network_export.json");
-  a.hide();
-  a.elt.click();
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = "network_export.json";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
 
+// Import network state from JSON file
 function importFromJSON(file) {
   let data;
   try {
+    // Handle binary or text
     if (typeof file.data === "object") {
       data = file.data;
     } else {
@@ -44,58 +49,34 @@ function importFromJSON(file) {
     return;
   }
 
-  // --- Alte Daten löschen ---
-  // Stoppe laufende Animation und leere Canvas
+  // --- Reset ---
   animation.running = false;
   noLoop();
-
-  // Leere alle Strukturen
   nodes = [];
   randomParents = [];
-  randEdges         = [];
-  edges             = [];
-  animation.queue   = [];
+  randEdges = [];
+  edges = [];
+  animation.queue = [];
   animation.current = null;
 
-  // --- Topologie und Algorithmus übernehmen ---
-if (typeof data.topology === "string") {
-  const requested = data.topology.trim().toLowerCase();
-  // gültige Keys aus deinem info.js (oder alternativ topologyHandlers)
-  const validKeys = Object.keys(topologyInfo); 
-  // finde exakt den Eintrag, unabhängig von Groß-/Kleinschreibung
-  const match = validKeys.find(key => key.toLowerCase() === requested);
-  if (match) {
-    topology = match;
-    // Dropdown-Label wieder in Title Case
-    const label = match
-      .split(" ")
-      .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-      .join(" ");
-    topologySel.selected(label);
-    showTopologyInfo(topology);
-  } else {
-    console.warn("Unbekannte Topologie:", data.topology);
+  // --- Topology & Algorithm ---
+  if (typeof data.topology === "string") {
+    const requested = data.topology.trim().toLowerCase();
+    if (topologyData.hasOwnProperty(requested)) {
+      topology = requested;
+      selectTopology(document.querySelector(`#topo-grid img[data-topo=\"${requested}\"]`));
+    } else {
+      console.warn("Unbekannte Topologie:", data.topology);
+    }
   }
-}
-
 
   if (typeof data.algorithm === "string") {
-    algorithm = data.algorithm.toLowerCase();
-    let algoCapitalized;
-    switch (data.algorithm) {
-      case "nearest-neighbor":
-        algoCapitalized = "Nearest Neighbor"; break;
-      case "2-nearest":
-        algoCapitalized = "2-Nearest";       break;
-      case "random":
-        algoCapitalized = "Random";          break;
-      default:
-        algoCapitalized = algorithmSel.value();
-    }
-    algorithmSel.selected(algoCapitalized);
+    const requestedAlgo = data.algorithm.toLowerCase();
+    algorithm = requestedAlgo;
+    selectAlgorithm(document.querySelector(`#algo-grid img[data-algo=\"${requestedAlgo}\"]`));
   }
 
-  // --- Knoten aus JSON übernehmen ---
+  // --- Nodes ---
   for (let n of data.nodes) {
     if (typeof n.x === "number" && typeof n.y === "number") {
       nodes.push({
@@ -111,116 +92,19 @@ if (typeof data.topology === "string") {
     }
   }
 
-  // Eingabe zurücksetzen, damit derselbe Dateiname erneut importiert werden kann
-  if (typeof fileInput !== "undefined" && fileInput.elt) {
+  // Clear file input to allow re-import
+  if (fileInput && fileInput.elt) {
     fileInput.elt.value = "";
   }
 
-  // --- Neue Kanten animiert aufbauen ---
-  if (topology === "ring") {
-    if (nodes.length > 1) {
-      for (let i = 0; i < nodes.length; i++) {
-        const from = nodes[i];
-        const to   = nodes[(i + 1) % nodes.length];
-        enqueueEdgeTask(from, to);
-      }
-    }
-  } else if (topology === "star") {
-    if (nodes.length > 1) {
-      const hub = nodes[0];
-      nodes.slice(1).forEach(n => enqueueEdgeTask(hub, n));
-    }
-  } else if (topology === "binary tree") {
-    for (let i = 1; i < nodes.length; i++) {
-      const parentIdx = Math.floor((i - 1) / 2);
-      enqueueEdgeTask(nodes[parentIdx], nodes[i]);
-    }
-  } else if (topology === "random tree") {
-    // zufällige Parents neu generieren und animiert aufbauen
-    randomParents = [];  // sicherstellen
-    if (nodes.length > 0) {
-      randomParents.push(null);
-      for (let i = 1; i < nodes.length; i++) {
-        const pIdx = Math.floor(Math.random() * i);
-        randomParents.push(pIdx);
-        enqueueEdgeTask(nodes[pIdx], nodes[i]);
-      }
-    }
-  } else if (topology === "ntt") {
-    // für jeden Knoten i>0 Greedy-Parent suchen
-    if (nodes.length > 1) {
-      for (let i = 1; i < nodes.length; i++) {
-        let bestIdx = 0, bestDist = Infinity;
-        for (let j = 0; j < i; j++) {
-          const dx = nodes[i].x - nodes[j].x;
-          const dy = nodes[i].y - nodes[j].y;
-          const d  = Math.hypot(dx, dy);
-          if (d < bestDist) {
-            bestDist = d;
-            bestIdx  = j;
-          }
-        }
-        enqueueEdgeTask(nodes[bestIdx], nodes[i]);
-      }
-    }
-  } else if (topology === "complete") {
-    // für jeden i=1..N-1 und j<i
-    for (let i = 1; i < nodes.length; i++) {
-      for (let j = 0; j < i; j++) {
-        enqueueEdgeTask(nodes[j], nodes[i]);
-      }
-    }
-  } else if (topology === "path") {
-    // import: für i = 1..N-1 jeweils Vorgänger → aktueller
-    for (let i = 1; i < nodes.length; i++) {
-      enqueueEdgeTask(nodes[i - 1], nodes[i]);
-    }
-  } else if (topology === "emst") {
-    const mstEdges = computeEMSTEdges(nodes);
-    mstEdges.forEach(e => enqueueEdgeTask(e.from, e.to));
-  } else if (topology === "delaunay") {
-    // Delaunay nach dem Import animiert aufbauen
-    const delaunayEdges = computeDelaunayEdges(nodes);
-    delaunayEdges.forEach(e => enqueueEdgeTask(e.from, e.to));
-  } else if (topology === "gabriel") {
-    // nach dem Import Gabriel animiert aufbauen
-    const gabrielEdges = computeGabrielEdges(nodes);
-    gabrielEdges.forEach(e => enqueueEdgeTask(e.from, e.to));
-  } else if (topology === "rng") {
-    // nach dem Import RNG animiert aufbauen
-    const rngEdges = computeRNGEdges(nodes);
-    rngEdges.forEach(e => enqueueEdgeTask(e.from, e.to));
-  } else if (topology === "gg") {
-    const r = 100;
-    const ggEdges = computeGGEdges(nodes, r);
-    ggEdges.forEach(e => enqueueEdgeTask(e.from, e.to));
-  } else if (topology === "chordal ring") {
-    // kompletten Chordal Ring importieren
-    const crEdges = computeDynamicChordalRingEdges(nodes);
-    crEdges.forEach(e => enqueueEdgeTask(e.from, e.to));
-  }
+  // --- Rebuild edges per topology ---
+  updateTopologyEdges();
 
-  // Animation starten
-  animation.running = true;
-  loop();
+  // --- Start animation if any ---
+  if (animation.queue.length > 0) {
+    animation.running = true;
+    loop();
+  } else {
+    redraw();
+  }
 }
-
-/** TODO
-  "chordal ring": {
-    title: "Chordal Ring",
-    desc: "Ring plus fixed-step chords based on node indices.",
-    pros: ["Improves diameter over simple ring", "Regular topology"],
-    cons: ["Assumes circular ordering", "Chaotic on arbitrary layouts"]
-  },
-  "k-nn graph": {
-    title: "k-Nearest Neighbors Graph",
-    desc: "Each node connects to its k closest neighbors.",
-    pros: ["Controls local connectivity", "Reflects clustering structure"],
-    cons: ["Needs sorting distances", "May be asymmetric"]
-  },"grid": {
-    title: "Grid Graph",
-    desc: "Snaps nodes to a fixed grid and connects 4-neighbors (up/down/left/right).",
-    pros: ["Structured layout", "Simple neighbor logic"],
-    cons: ["Depends on grid size", "May distort true distances"]
-  }
- */

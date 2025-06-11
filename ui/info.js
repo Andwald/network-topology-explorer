@@ -1,5 +1,5 @@
 // ui/info.js
-const topologyInfo = {
+const topologyData = {
   "ring": {
     title: "Ring",
     desc: "Connects all nodes in a loop. Good for simple closed networks with uniform degree.",
@@ -12,13 +12,13 @@ const topologyInfo = {
     pros: ["Minimal diameter", "Easy central control"],
     cons: ["Single point of failure", "Hub bottleneck"]
   },
-  "binary tree": {
+  "binary-tree": {
     title: "Binary Tree",
     desc: "Heap-style tree: node i’s parent is at ⌊(i–1)/2⌋. Good for hierarchical structures.",
     pros: ["Log₂(N) depth", "Simple parent calculation"],
     cons: ["Branching increases", "Root is critical"]
   },
-  "random tree": {
+  "random-tree": {
     title: "Random Tree",
     desc: "Each new node attaches to a random existing node. Useful for prototype testing.",
     pros: ["Easy", "Stochastic topology"],
@@ -72,7 +72,7 @@ const topologyInfo = {
     pros: ["Models wireless/adhoc networks", "Intuitive radius parameter"],
     cons: ["Edge count sensitive to r", "Requires O(N²) distance tests", "Not always connected"]
   },
-  "chordal ring": {
+  "chordal-ring": {
     title: "Dynamic Chordal Ring",
     desc: "Ring plus fixed-step chords based on node count.",
     pros: ["Improves diameter over simple ring", "Regular topology"],
@@ -80,22 +80,20 @@ const topologyInfo = {
   }
 };
 
-function showTopologyInfo(name) {
-  const info = topologyInfo[name];
-  const container = select("#info-box");
+function showTopologyInfo(topoKey) {
+  const info = select('#topo-info');
   if (!info) {
-    container.html("<p>No information available.</p>");
+    console.error('showTopologyInfo: #topo-info Element nicht gefunden');
     return;
   }
-  const prosText = info.pros.join(", ");
-  const consText = info.cons.join(", ");
-  const html = `
-    <h3 class="info-title">${info.title}</h3>
-    <p class="info-desc">${info.desc}</p>
-    <p class="pros">Pros: ${prosText}</p>
-    <p class="cons">Cons: ${consText}</p>
-  `;
-  container.html(html);
+  const data = topologyData[topoKey] || {};
+  // Setze Titel
+  info.html(`
+    <h3 class="info-title">${data.title || topoKey}</h3>
+    <p class="info-desc">${data.description || ''}</p>
+    <div class="pros">${(data.pros || []).map(p => `<li>${p}</li>`).join('')}</div>
+    <div class="cons">${(data.cons || []).map(c => `<li>${c}</li>`).join('')}</div>
+  `);
 }
 
 

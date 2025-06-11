@@ -9,14 +9,45 @@
 </head>
 <body>
   <div id="app">
-    <!-- Hier wird das UI hineingerendert -->
-    <div id="ui"></div>
-    <div id="info-box" style="padding:8px; background:#fafafa; border-top:1px solid #ccc; font-size:0.85em;"></div>
-    <!-- Hier wird das p5.js-Canvas eingefügt -->
-    <div id="canvas-container"></div>
+    <!-- Sidebar -->
+    <aside id="sidebar">
+      <header class="sidebar-header">
+        <h1>Network Topology Explorer</h1>
+        <!-- Button Layout: 2x3 Grid -->
+        <div class="btn-grid">
+          <button id="stepBackBtn" class="icon-btn">↩️</button>
+          <button id="resetBtn" class="icon-btn">🔄</button>
+          <button id="exportBtn" class="text-btn">💾 Export JSON</button>
+          <button id="importBtn" class="text-btn">📂 Import JSON</button>
+          <button id="exportPngBtn" class="text-btn">🖼️ Export PNG</button>
+          <button id="exportSvgBtn" class="text-btn">🖼️ Export SVG</button>
+        </div>
+      </header>
+
+      <!-- Aktuelle Topologie-Info -->
+      <section id="topo-info"></section>
+
+      <!-- Topologien-Auswahl als Icon-Grid -->
+      <section class="selector-group">
+        <h2>Topologien</h2>
+        <div id="topo-grid" class="icon-grid"></div>
+      </section>
+      <hr/>
+      <!-- Algorithmus-Auswahl als Icon-Grid -->
+      <section class="selector-group">
+        <h2>Algorithmen</h2>
+        <div id="algo-grid" class="icon-grid"></div>
+      </section>
+      <button id="applyAlgoBtn" class="apply-btn">▶️ Apply Algorithm</button>
+    </aside>
+
+    <!-- Canvas-Bereich -->
+    <main id="main-content">
+      <div id="canvas-container"></div>
+    </main>
   </div>
 
-  <!-- Skripte einbinden -->
+  <!-- Skripte -->
   <script src="utils/jsonIO.js"></script>
   <script src="ui/controls.js"></script>
   <script src="ui/hint.js"></script>
