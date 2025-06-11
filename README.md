@@ -31,43 +31,18 @@ Ein interaktives Visualisierungstool zum Erkunden und Experimentieren mit klassi
 ## Unterstützte Topologien
 
 - **Ring**  
-  <img src="icons/ring.svg" alt="Ring" style="background:#1f2937; padding:8px; width:85px; height:85px; border-radius:8px; object-fit:contain; vertical-align:middle;" />
-
-- **Path**  
-  <img src="icons/path.svg" alt="Path" style="background:#1f2937; padding:8px; width:85px; height:85px; border-radius:8px; object-fit:contain; vertical-align:middle;" />
-
+- **Path**
 - **Star**  
-  <img src="icons/star.svg" alt="Star" style="background:#1f2937; padding:8px; width:85px; height:85px; border-radius:8px; object-fit:contain; vertical-align:middle;" />
-
-- **Binary Tree**  
-  <img src="icons/binary-tree.svg" alt="Binary Tree" style="background:#1f2937; padding:8px; width:85px; height:85px; border-radius:8px; object-fit:contain; vertical-align:middle;" />
-
+- **Binary Tree** 
 - **Random Tree**  
-  <img src="icons/random-tree.svg" alt="Random Tree" style="background:#1f2937; padding:8px; width:85px; height:85px; border-radius:8px; object-fit:contain; vertical-align:middle;" />
-
-- **NNT**  
-  <img src="icons/nnt.svg" alt="NNT" style="background:#1f2937; padding:8px; width:85px; height:85px; border-radius:8px; object-fit:contain; vertical-align:middle;" />
-
+- **Nearest Neighbor Tree**  
 - **Complete**  
-  <img src="icons/complete.svg" alt="Complete" style="background:#1f2937; padding:8px; width:85px; height:85px; border-radius:8px; object-fit:contain; vertical-align:middle;" />
-
-- **EMST**  
-  <img src="icons/emst.svg" alt="EMST" style="background:#1f2937; padding:8px; width:85px; height:85px; border-radius:8px; object-fit:contain; vertical-align:middle;" />
-
+- **Euclidean Minimum Spanning Tree**  
 - **Delaunay**  
-  <img src="icons/delaunay.svg" alt="Delaunay" style="background:#1f2937; padding:8px; width:85px; height:85px; border-radius:8px; object-fit:contain; vertical-align:middle;" />
-
 - **Gabriel**  
-  <img src="icons/gabriel.svg" alt="Gabriel" style="background:#1f2937; padding:8px; width:85px; height:85px; border-radius:8px; object-fit:contain; vertical-align:middle;" />
-
-- **RNG**  
-  <img src="icons/rng.svg" alt="RNG" style="background:#1f2937; padding:8px; width:85px; height:85px; border-radius:8px; object-fit:contain; vertical-align:middle;" />
-
-- **GG**  
-  <img src="icons/gg.svg" alt="GG" style="background:#1f2937; padding:8px; width:85px; height:85px; border-radius:8px; object-fit:contain; vertical-align:middle;" />
-
+- **Relative Neighborhood Graph**  
+- **Geometric Graph**  
 - **Chordal Ring**  
-  <img src="icons/chordal-ring.svg" alt="Chordal Ring" style="background:#1f2937; padding:8px; width:85px; height:85px; border-radius:8px; object-fit:contain; vertical-align:middle;" />
 
 ---
 
