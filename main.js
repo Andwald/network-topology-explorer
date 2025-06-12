@@ -2,6 +2,7 @@ window.nodes = [];
 window.edges = [];
 window.randomParents = [];
 window.randEdges = [];
+window.topologyVersion = 0;
 let topology = "ring";
 let algorithm = "nearest";
 let knnK = 3;               // Default k-Wert
@@ -17,6 +18,26 @@ let occupied = {};
 const gridSize = 50;
 // threshold = Anzahl Knoten pro Schritt in d für Chord Ring
 window.chordThreshold = 6;
+
+function initSpeedControl() {
+  const slider = document.getElementById('speedRange');
+  const maxV   = parseFloat(slider.max);
+  slider.addEventListener('input', () => {
+    const v = parseFloat(slider.value);
+    // ganz rechts = maxV → sofort (animSpeed=0)
+    if (Math.abs(v - maxV) < 1e-6) {
+      animSpeed = 0;
+    } else {
+      animSpeed = v;   // alle anderen Positionen: 0.1…1.9 → proportional
+    }
+  });
+
+  // Hier verhindern wir, dass Klicks/Touches auf dem Regler zum Canvas durchgereicht werden:
+  const wrapper = document.getElementById('speed-control');
+  ['mousedown', 'touchstart'].forEach(evt =>
+    wrapper.addEventListener(evt, e => e.stopPropagation())
+  );
+}
 
 // Hier die neuen Task-Generatoren einfügen:
 function enqueueNodeTask(x, y) {
@@ -46,7 +67,8 @@ function enqueueEdgeTask(from, to) {
     type: "edge",
     from, to,
     progress: 0,
-    duration: dur
+    duration: dur,
+    version:  window.topologyVersion
   });
 }
 
@@ -59,12 +81,14 @@ function enqueueRemoveEdgeTask(from, to) {
     type: "remove-edge",
     from, to,
     progress: 0,
-    duration: dur
+    duration: dur,
+    version:  window.topologyVersion
   });
 }
 
 function setup() {
   setupUI();
+  initSpeedControl();
 
   const container = document.getElementById("canvas-container");
   const w = container.offsetWidth;
@@ -128,7 +152,9 @@ function animateStep() {
     stroke(100);
     line(task.from.x, task.from.y, ix, iy);
     if (t >= 1) {
-      edges.push({ from: task.from, to: task.to });
+      if (task.version === window.topologyVersion) {
+        edges.push({ from: task.from, to: task.to });
+      }
       animation.current = null;
     }
   } else if (task.type === "remove-edge") {
@@ -145,12 +171,14 @@ function animateStep() {
 
     if (task.progress >= task.duration) {
       // erst hier die statische Kante endgültig entfernen:
-      edges = edges.filter(e =>
-        !(e.from.x === task.from.x &&
+      if (task.version === window.topologyVersion) {
+        edges = edges.filter(e =>
+          !(e.from.x === task.from.x &&
           e.from.y === task.from.y &&
           e.to.x   === task.to.x &&
           e.to.y   === task.to.y)
-      );
+        );
+      }
       // Reset Styling & Task
       strokeWeight(1);
       animation.current = null;

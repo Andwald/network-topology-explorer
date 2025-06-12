@@ -71,7 +71,7 @@ html, body {
 #topo-info {
   /* feste Höhe, bleibt immer gleich groß */
   flex: 0 0 auto;
-  height: 180px;           /* passe an, wenn du mehr oder weniger Platz möchtest */
+  height: 140px;           /* passe an, wenn du mehr oder weniger Platz möchtest */
   overflow-y: auto;        /* scrollt, wenn mehr Inhalt reinkommt */
   
   background: #fef3c7;     /* sanftes Gelb */
@@ -132,6 +132,24 @@ html, body {
   border-color: #3b82f6;
   transform: scale(0.95);
 }
+/* Standard-Rahmen, damit alle Icons Klick-Feedback bekommen */
+.icon-grid img {
+  border: 2px solid #4b5563;        /* dezentes Grau */
+  transition: border-color 0.2s, transform 0.1s, box-shadow 0.2s;
+}
+
+/* Hover-Zustand für Klickbarkeit */
+.icon-grid img:hover {
+  border-color: #3b82f6;            /* blaues Akzent beim Überfahren */
+}
+
+/* Ausgewähltes Icon */
+.icon-grid img.selected {
+  border-color: #10b981;            /* sattes Grün als Farbhervorhebung */
+  box-shadow: 0 0 0 2px rgba(16,185,129,0.5); /* leichter Glow */
+  transform: scale(0.95);           /* sanfte Verkleinerung */
+}
+
 
 /* Apply-Button */
 .apply-btn {
@@ -159,4 +177,27 @@ html, body {
   flex: 1;
   position: relative;
   background: #111827;
+}
+#speed-control {
+  z-index: 10;                   /* über dem Canvas */
+  pointer-events: auto;
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: rgba(31, 41, 55, 0.8); /* leicht transparenter Dark-Background */
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #f9fafb;
+}
+
+#speed-control label {
+  white-space: nowrap;
+}
+
+#speed-control input[type="range"] {
+  width: 100px;
 }

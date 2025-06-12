@@ -29,13 +29,13 @@
 
       <!-- Topologien-Auswahl als Icon-Grid -->
       <section class="selector-group">
-        <h2>Topologien</h2>
+        <h2>Topologies</h2>
         <div id="topo-grid" class="icon-grid"></div>
       </section>
       <hr/>
       <!-- Algorithmus-Auswahl als Icon-Grid -->
       <section class="selector-group">
-        <h2>Algorithmen</h2>
+        <h2>Algorithms</h2>
         <div id="algo-grid" class="icon-grid"></div>
       </section>
       <button id="applyAlgoBtn" class="apply-btn">▶️ Apply Algorithm</button>
@@ -43,7 +43,12 @@
 
     <!-- Canvas-Bereich -->
     <main id="main-content">
-      <div id="canvas-container"></div>
+      <div id="canvas-container">
+        <div id="speed-control">
+          <label for="speedRange">Animation Speed</label>
+          <input type="range" id="speedRange" min="0.1" max="2" step="0.1" value="1">
+        </div>
+      </div>
     </main>
   </div>
 

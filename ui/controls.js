@@ -198,6 +198,7 @@ function selectTopology(img) {
           .forEach(i => i.classList.remove('selected'));
   img.classList.add('selected');
   topology = img.dataset.topo;
+  window.topologyVersion++;
   showTopologyInfo(topology);
   updateTopologyEdges();
 }
