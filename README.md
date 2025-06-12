@@ -43,6 +43,8 @@ Ein interaktives Visualisierungstool zum Erkunden und Experimentieren mit klassi
 - **Relative Neighborhood Graph**  
 - **Geometric Graph**  
 - **Chordal Ring**  
+- **k-Nearest Neighbor**
+- **Grid Graph**
 
 ---
 
