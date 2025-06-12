@@ -3,9 +3,10 @@ window.edges = [];
 window.randomParents = [];
 window.randEdges = [];
 window.topologyVersion = 0;
+window.knnK = 3;
+window.gridSize = 50; // Grid Graph: Zellgröße in Pixeln (Default)
 let topology = "ring";
 let algorithm = "nearest";
-let knnK = 3;               // Default k-Wert
 let kSlider, kLabel;        // UI-Elemente
 let animSpeed = 1;         // 1 = Normal, 0 = sofort
 const BASE_DURATION = 10;  // Basisdauer in Frames
@@ -15,28 +16,202 @@ window.animation = {
   current: null
 };
 let occupied = {};
-const gridSize = 50;
 // threshold = Anzahl Knoten pro Schritt in d für Chord Ring
 window.chordThreshold = 6;
+window.ggThreshold = 100;         // Default für Geometric Graph
+
+/**
+ * Rundet eine (x,y)-Position auf den nächsten Grid-Slot.
+ * @param {number} x Pixel-X
+ * @param {number} y Pixel-Y
+ * @returns {{x:number,y:number,key:string}} Genauer Slot + eindeutiger Key
+ */
+function snapToGrid(x, y) {
+  const col = Math.round(x / window.gridSize);
+  const row = Math.round(y / window.gridSize);
+  return {
+    x:   col * window.gridSize,
+    y:   row * window.gridSize,
+    key: `${col},${row}`
+  };
+}
+
+/**
+ * Zeichnet ein einfaches Linien-Raster alle gridSize Pixel.
+ */
+function drawGridOverlay() {
+  stroke(255, 255, 255, 50); // weiß mit 20% Deckkraft
+  strokeWeight(1);
+  for (let gx = 0; gx <= width; gx += window.gridSize) {
+    line(gx, 0, gx, height);
+  }
+  for (let gy = 0; gy <= height; gy += window.gridSize) {
+    line(0, gy, width, gy);
+  }
+}
+
+/**
+ * Setzt alle vorhandenen Knoten auf ihre
+ * jeweiligen Grid-Slots zurück und leert das occupied-Map.
+ */
+function updateGridNodePositions() {
+  occupied = {};  // globale Map: slotKey → true
+  for (let n of nodes) {
+    const { x, y, key } = snapToGrid(n.x, n.y);
+    // Wenn Slot noch frei: aktualisiere Position
+    if (!occupied[key]) {
+      n.x = x;
+      n.y = y;
+      occupied[key] = true;
+    } else {
+      // Kollision: wir lassen’s hier einfach überlappen
+      // (könntest hier noch Nachbarsuche implementieren)
+      n.x = x;
+      n.y = y;
+    }
+  }
+}
+
+
+function updateBottomControls() {
+  const panel = document.getElementById('bottom-controls');
+  if (!panel) return;
+  panel.innerHTML = '';
+
+  if (topology === 'chordal-ring') {
+    panel.style.display = 'block';
+    panel.innerHTML = `
+      <label for="chordThreshold">Max Hops:</label>
+      <input
+        type="range"
+        id="chordThreshold"
+        min="2"
+        max="50"
+        step="1"
+        value="${window.chordThreshold}"
+      >
+      <span id="chordThresholdVal">${window.chordThreshold}</span>
+    `;
+    const s = document.getElementById('chordThreshold');
+    const v = document.getElementById('chordThresholdVal');
+
+    // live nur die Anzeige updaten
+    s.addEventListener('input', e => {
+      v.textContent = e.target.value;
+    });
+
+    // erst beim Loslassen: Version erhöhen, Wert speichern, redraw
+    s.addEventListener('change', e => {
+      window.topologyVersion++;
+      window.chordThreshold = +e.target.value;
+      updateTopologyEdges();
+      redraw(); 
+    });
+
+  }else if (topology === 'gg') {
+    panel.style.display = 'block';
+    panel.innerHTML = `
+      <label for="ggThreshold">Threshold r:</label>
+      <input
+        type="range"
+        id="ggThreshold"
+        min="10"
+        max="1000"
+        step="10"
+        value="${window.ggThreshold}"
+      >
+      <span id="ggThresholdVal">${window.ggThreshold}</span>
+    `;
+
+    // HIER kommen die Listener:
+    const s = document.getElementById('ggThreshold');
+    const v = document.getElementById('ggThresholdVal');
+
+    // live den Wert anzeigen
+    s.addEventListener('input', e => {
+      v.textContent = e.target.value;
+    });
+
+    // beim Loslassen: Version bump, neuen Graph zeichnen
+    s.addEventListener('change', e => {
+      window.topologyVersion++;
+      window.ggThreshold = +e.target.value;
+      updateTopologyEdges();
+    });
+
+  } else if (topology === 'knn') {
+    panel.style.display = 'block';
+    panel.innerHTML = `
+      <label for="knnK">k (Nachbarn):</label>
+      <input
+        type="range"
+        id="knnK"
+        min="1"
+        max="10"
+        step="1"
+        value="${window.knnK}"
+      >
+      <span id="knnKVal">${window.knnK}</span>
+    `;
+    const s = document.getElementById('knnK');
+    const v = document.getElementById('knnKVal');
+    s.addEventListener('input', e => v.textContent = e.target.value);
+    s.addEventListener('change', e => {
+      window.topologyVersion++;
+      window.knnK = +e.target.value;
+      updateTopologyEdges();
+    });
+  } else if (topology === 'grid') {
+    panel.style.display = 'block';
+    panel.innerHTML = `
+      <label for="gridSize">Grid-Zelle (px):</label>
+      <input
+        type="range"
+        id="gridSize"
+        min="10"
+        max="200"
+        step="5"
+        value="${window.gridSize}"
+      >
+      <span id="gridSizeVal">${window.gridSize}</span>
+    `;
+    const slider = document.getElementById('gridSize');
+    const display = document.getElementById('gridSizeVal');
+
+    // live nur die Anzeige anpassen
+    slider.addEventListener('input', e => {
+      display.textContent = e.target.value;
+    });
+
+    // beim Loslassen: version bump, Wert speichern, Neuaufbau
+    slider.addEventListener('change', e => {
+      window.topologyVersion++;          // alte Animations-Tasks ignorieren
+      window.gridSize = +e.target.value;
+      updateGridNodePositions();         // (wird in Schritt 3 kommen)
+      updateTopologyEdges();             // bestehende Edges removen + neu aufbauen
+    });
+  }else {
+    panel.style.display = 'none';
+  }
+}
+
 
 function initSpeedControl() {
   const slider = document.getElementById('speedRange');
   const maxV   = parseFloat(slider.max);
   slider.addEventListener('input', () => {
     const v = parseFloat(slider.value);
-    // ganz rechts = maxV → sofort (animSpeed=0)
-    if (Math.abs(v - maxV) < 1e-6) {
-      animSpeed = 0;
-    } else {
-      animSpeed = v;   // alle anderen Positionen: 0.1…1.9 → proportional
-    }
+    animSpeed = (Math.abs(v - maxV) < 1e-6) ? 0 : v;
   });
 
-  // Hier verhindern wir, dass Klicks/Touches auf dem Regler zum Canvas durchgereicht werden:
-  const wrapper = document.getElementById('speed-control');
-  ['mousedown', 'touchstart'].forEach(evt =>
-    wrapper.addEventListener(evt, e => e.stopPropagation())
-  );
+  // Abfangen auf beiden Panels: Speed + Bottom
+  ['speed-control','bottom-controls'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    ['mousedown','touchstart'].forEach(evt =>
+      el.addEventListener(evt, e => e.stopPropagation())
+    );
+  });
 }
 
 // Hier die neuen Task-Generatoren einfügen:
@@ -89,6 +264,7 @@ function enqueueRemoveEdgeTask(from, to) {
 function setup() {
   setupUI();
   initSpeedControl();
+  updateBottomControls(); 
 
   const container = document.getElementById("canvas-container");
   const w = container.offsetWidth;
@@ -107,6 +283,9 @@ function setup() {
 
 function draw() {
   background(240);
+  if (topology === 'grid') {
+    drawGridOverlay();
+  }
   drawHint();
 
   // 1) Erst alles, was schon komplett „fertig“ animiert ist
@@ -199,18 +378,12 @@ function mousePressed() {
   // 1) Klick nur im Canvas
   if (mouseX < 0 || mouseX > width || mouseY < 0 || mouseY > height) return;
 
-  // 2) Snap-Koordinaten ermitteln (inkl. Grid-Slot key)
-  const { x, y, occupiedKey } = snapNode(mouseX, mouseY);
-  if (occupiedKey && occupied[occupiedKey]) return;  // Slot schon belegt
-  if (occupiedKey) occupied[occupiedKey] = true;
-
-  // 3) Node-Task in die Queue
-  enqueueNodeTask(x, y);
-
-  // 4) Topologien
+  // Ring
   if (topology === "ring") {
+    const { x, y } = snapNode(mouseX, mouseY);
+    enqueueNodeTask(x, y);
     const newNode   = nodes[nodes.length - 1];
-    const prevCount = nodes.length - 1; 
+    const prevCount = nodes.length - 1;
     if (prevCount > 1) {
       const prevLast = nodes[prevCount - 1];
       const first    = nodes[0];
@@ -218,19 +391,19 @@ function mousePressed() {
       enqueueEdgeTask(prevLast, newNode);
       enqueueEdgeTask(newNode, first);
     } else if (prevCount === 1) {
-      // wenn vorher nur ein Knoten da war, haben wir keine alte Abschlusskante,
-      // sondern nur eine neue Kante zum Startknoten:
-      const first = nodes[0];
-      enqueueEdgeTask(first, newNode);
+      enqueueEdgeTask(nodes[0], newNode);
     }
     animation.running = true;
     loop();
     return;
   }
+
+  // Star
   if (topology === "star") {
+    const { x, y } = snapNode(mouseX, mouseY);
+    enqueueNodeTask(x, y);
     const newNode = nodes[nodes.length - 1];
-    // Falls schon ein Hub existiert, knüpfen wir sofort eine Kante
-    if (nodes.length > 0) {
+    if (nodes.length > 1) {
       const hub = nodes[0];
       enqueueEdgeTask(hub, newNode);
     }
@@ -238,162 +411,189 @@ function mousePressed() {
     loop();
     return;
   }
+
+  // Binary Tree
   if (topology === "binary-tree") {
+    const { x, y } = snapNode(mouseX, mouseY);
+    enqueueNodeTask(x, y);
     const prevCount = nodes.length - 1;
-    const newNode = nodes[prevCount];
     if (prevCount > 0) {
       const parentIdx = Math.floor((prevCount - 1) / 2);
-      const parent    = nodes[parentIdx];
-      enqueueEdgeTask(parent, newNode);
+      enqueueEdgeTask(nodes[parentIdx], nodes[prevCount]);
     }
     animation.running = true;
     loop();
     return;
   }
-  if (topology === "random-tree") {
-    const prevCount = nodes.length - 1;     // Knotenzahl vor dem neuen
-    const newNode   = nodes[prevCount];     // das frisch gepushte Objekt
 
+  // Random Tree
+  if (topology === "random-tree") {
+    const { x, y } = snapNode(mouseX, mouseY);
+    enqueueNodeTask(x, y);
+    const prevCount = nodes.length - 1;
     if (prevCount > 0) {
-      // Wähle Parent ausschließlich aus den alten prevCount Knoten
       const parentIdx = Math.floor(Math.random() * prevCount);
-      const parent    = nodes[parentIdx];
-      enqueueEdgeTask(parent, newNode);
+      enqueueEdgeTask(nodes[parentIdx], nodes[prevCount]);
       randomParents.push(parentIdx);
     } else {
-      // erster Knoten hat keinen Parent
       randomParents.push(null);
     }
-
     animation.running = true;
     loop();
     return;
   }
+
+  // Nearest Neighbor Tree (nnt)
   if (topology === "nnt") {
-    // prevCount = Anzahl der Knoten vor dem neuen
+    const { x, y } = snapNode(mouseX, mouseY);
+    enqueueNodeTask(x, y);
     const prevCount = nodes.length - 1;
-    // newNode ist das soeben in nodes gepushte Objekt
-    const newNode   = nodes[prevCount];
     if (prevCount > 0) {
-      let bestIdx  = 0;
-      let bestDist = Infinity;
-      // Suche unter den alten prevCount Knoten
+      let bestIdx = 0, bestDist = Infinity;
       for (let j = 0; j < prevCount; j++) {
-        const dx = newNode.x - nodes[j].x;
-        const dy = newNode.y - nodes[j].y;
-        const d  = Math.hypot(dx, dy);
-        if (d < bestDist) {
-          bestDist = d;
-          bestIdx  = j;
-        }
+        const dx = x - nodes[j].x, dy = y - nodes[j].y, d = Math.hypot(dx, dy);
+        if (d < bestDist) { bestDist = d; bestIdx = j; }
       }
-      enqueueEdgeTask(nodes[bestIdx], newNode);
+      enqueueEdgeTask(nodes[bestIdx], nodes[prevCount]);
     }
     animation.running = true;
     loop();
     return;
   }
+
+  // Complete Graph
   if (topology === "complete") {
-    // prevCount = Anzahl vor dem neuen
+    const { x, y } = snapNode(mouseX, mouseY);
+    enqueueNodeTask(x, y);
     const prevCount = nodes.length - 1;
-    const newNode   = nodes[prevCount];
-    // mit allen alten Knoten verbinden
     for (let j = 0; j < prevCount; j++) {
-      enqueueEdgeTask(nodes[j], newNode);
+      enqueueEdgeTask(nodes[j], nodes[prevCount]);
     }
     animation.running = true;
     loop();
     return;
   }
+
+  // Path
   if (topology === "path") {
-    // prevCount = Anzahl vor dem neuen
+    const { x, y } = snapNode(mouseX, mouseY);
+    enqueueNodeTask(x, y);
     const prevCount = nodes.length - 1;
-    const newNode   = nodes[prevCount];
     if (prevCount > 0) {
-      enqueueEdgeTask(nodes[prevCount - 1], newNode);
+      enqueueEdgeTask(nodes[prevCount - 1], nodes[prevCount]);
     }
     animation.running = true;
     loop();
     return;
   }
+
+  // EMST
   if (topology === "emst") {
-    // 1) prevCount = Knotenzahl vor neuem
-    const prevCount = nodes.length - 1;
-    // newNode ist in nodes[prevCount]
-    const newNode = nodes[prevCount];
-
-    // 2) alle alten Kanten entfernen
+    const { x, y } = snapNode(mouseX, mouseY);
+    enqueueNodeTask(x, y);
     edges.forEach(e => enqueueRemoveEdgeTask(e.from, e.to));
-    // 3) MST über alle Knoten neu berechnen
-    const mstEdges = computeEMSTEdges(nodes);
-    mstEdges.forEach(e => enqueueEdgeTask(e.from, e.to));
-
+    computeEMSTEdges(nodes).forEach(e => enqueueEdgeTask(e.from, e.to));
     animation.running = true;
     loop();
     return;
   }
+
+  // Delaunay
   if (topology === "delaunay") {
-    // 1) alle alten Kanten entfernen
+    const { x, y } = snapNode(mouseX, mouseY);
+    enqueueNodeTask(x, y);
     edges.forEach(e => enqueueRemoveEdgeTask(e.from, e.to));
-    // 2) alle Knoten (incl. neuem) triangulieren
-    const delaunayEdges = computeDelaunayEdges(nodes);
-    delaunayEdges.forEach(e => enqueueEdgeTask(e.from, e.to));
+    computeDelaunayEdges(nodes).forEach(e => enqueueEdgeTask(e.from, e.to));
     animation.running = true;
     loop();
     return;
   }
+
+  // Gabriel
   if (topology === "gabriel") {
-    // prevNodes = alle Knoten vor dem neuen
-    const prevNodes = nodes.slice(0, nodes.length - 1);
-    const newNode   = nodes[nodes.length - 1];
-    // 1) Alte Kanten entfernen
+    const { x, y } = snapNode(mouseX, mouseY);
+    enqueueNodeTask(x, y);
     edges.forEach(e => enqueueRemoveEdgeTask(e.from, e.to));
-    // 2) Gabriel global neu berechnen
-    const gabrielEdges = computeGabrielEdges(nodes);
-    // 3) enqueuen
-    gabrielEdges.forEach(e => enqueueEdgeTask(e.from, e.to));
+    computeGabrielEdges(nodes).forEach(e => enqueueEdgeTask(e.from, e.to));
     animation.running = true;
     loop();
     return;
   }
+
+  // RNG
   if (topology === "rng") {
-    // 1) alle alten Kanten entfernen
+    const { x, y } = snapNode(mouseX, mouseY);
+    enqueueNodeTask(x, y);
     edges.forEach(e => enqueueRemoveEdgeTask(e.from, e.to));
-    // 2) RNG über alle Knoten neu berechnen
-    const rngEdges = computeRNGEdges(nodes);
-    rngEdges.forEach(e => enqueueEdgeTask(e.from, e.to));
+    computeRNGEdges(nodes).forEach(e => enqueueEdgeTask(e.from, e.to));
     animation.running = true;
     loop();
     return;
   }
+
+  // Geometric Graph (gg)
   if (topology === "gg") {
+    const { x, y } = snapNode(mouseX, mouseY);
+    enqueueNodeTask(x, y);
     edges.forEach(e => enqueueRemoveEdgeTask(e.from, e.to));
-    const r = 100;
-    const ggEdges = computeGGEdges(nodes, r);
-    ggEdges.forEach(e => enqueueEdgeTask(e.from, e.to));
+    computeGGEdges(nodes, window.ggThreshold)
+      .forEach(e => enqueueEdgeTask(e.from, e.to));
     animation.running = true;
     loop();
     return;
   }
+
+  // Chordal Ring
   if (topology === "chordal-ring") {
-      // Alle bestehenden Kanten schrumpfen lassen
+    const { x, y } = snapNode(mouseX, mouseY);
+    enqueueNodeTask(x, y);
     edges.forEach(e => enqueueRemoveEdgeTask(e.from, e.to));
+    computeDynamicChordalRingEdges(nodes)
+      .forEach(e => enqueueEdgeTask(e.from, e.to));
+    animation.running = true;
+    loop();
+    return;
+  }
 
-    // Neu: Ring + Chords komplett neu berechnen
-    const allEdges = computeDynamicChordalRingEdges(nodes);
-    allEdges.forEach(e => enqueueEdgeTask(e.from, e.to));
+  // k-NN Graph
+  if (topology === "knn") {
+    const { x, y } = snapNode(mouseX, mouseY);
+    enqueueNodeTask(x, y);
+    edges.forEach(e => enqueueRemoveEdgeTask(e.from, e.to));
+    computeKNNEdges(nodes, window.knnK)
+      .forEach(e => enqueueEdgeTask(e.from, e.to));
+    animation.running = true;
+    loop();
+    return;
+  }
+
+  // Grid Graph
+  if (topology === "grid") {
+    const { x: sx, y: sy, key } = snapToGrid(mouseX, mouseY);
+    if (occupied[key]) return;          // schon belegt
+    occupied[key] = true;
+
+    enqueueNodeTask(sx, sy);
+    // alte Kanten wegrashen
+    edges.forEach(e => enqueueRemoveEdgeTask(e.from, e.to));
+    // neue Grid-Kanten aufbauen
+    const gridEdges = computeGridEdges(nodes, window.gridSize);
+    gridEdges.forEach(e => enqueueEdgeTask(e.from, e.to));
 
     animation.running = true;
     loop();
     return;
   }
 
-  // 5) Fallback für alle anderen Topologien
-  const newEdges = computeEdges(nodes, { x, y });
-  newEdges.forEach(e => enqueueEdgeTask(e.from, e.to));
+  // ––––– Fallback (falls du mal was vergisst) –––––
+  const { x, y } = snapNode(mouseX, mouseY);
+  enqueueNodeTask(x, y);
+  computeEdges(nodes, { x, y })
+    .forEach(e => enqueueEdgeTask(e.from, e.to));
   animation.running = true;
   loop();
 }
+
 
 function windowResized() {
   // Wenn das Fenster (oder UI) sich verändert, Canvas neu skalieren

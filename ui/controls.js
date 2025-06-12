@@ -16,7 +16,9 @@ function initTopologyIcons() {
     { key: 'gabriel',       icon: 'icons/gabriel.svg',         label: 'Gabriel' },
     { key: 'rng',           icon: 'icons/rng.svg',             label: 'RNG' },
     { key: 'gg',            icon: 'icons/gg.svg',              label: 'GG' },
-    { key: 'chordal-ring',  icon: 'icons/chordal-ring.svg',    label: 'Chordal Ring' }
+    { key: 'chordal-ring',  icon: 'icons/chordal-ring.svg',    label: 'Chordal Ring' },
+    { key: 'knn',           icon: 'icons/knn.svg',             label: 'k-NN Graph' },
+    { key: 'grid',          icon: 'icons/grid.svg',           label: 'Grid Graph' }
   ];
   const grid = document.getElementById('topo-grid');
   grid.innerHTML = '';  // vorher leeren
@@ -199,8 +201,15 @@ function selectTopology(img) {
   img.classList.add('selected');
   topology = img.dataset.topo;
   window.topologyVersion++;
+
+  if (topology === 'grid') {
+    updateGridNodePositions();
+  }
+
   showTopologyInfo(topology);
   updateTopologyEdges();
+  updateBottomControls();
+  if (window.updateBottomControls) window.updateBottomControls();
 }
 
 // selektiert den Algorithmus, high-lightet das Icon, updated `algorithm`
@@ -316,6 +325,25 @@ function stepBackHandler() {
     // Ring + Chords neu aufbauen
     const crEdges = computeDynamicChordalRingEdges(nodes);
     crEdges.forEach(e => enqueueEdgeTask(e.from, e.to));
+  } else if (topology === "knn") {
+    // 1) alle alten Kanten wegrashen
+    edges.forEach(e => enqueueRemoveEdgeTask(e.from, e.to));
+    // 2) k-NN auf prevNodes neu berechnen
+    const prevKNNEdges = computeKNNEdges(prevNodes, window.knnK);
+    prevKNNEdges.forEach(e => enqueueEdgeTask(e.from, e.to));
+  } else if (topology === "grid") {
+    // 1) Alle verbliebenen Kanten wegrashen
+    edges.forEach(e => enqueueRemoveEdgeTask(e.from, e.to));
+
+    // 2) Knoten intern entfernen
+    //    (wird außerhalb dieses Blocks schon gemacht: nodes.pop())
+
+    // 3) Re-Grid: alle übrigen Nodes aufs Raster setzen
+    updateGridNodePositions();
+
+    // 4) Grid-Kanten neu aufbauen
+    const prevGridEdges = computeGridEdges(nodes, window.gridSize);
+    prevGridEdges.forEach(e => enqueueEdgeTask(e.from, e.to));
   } else {
     const created = computeEdges(prevNodes, removedNode);
     created.forEach(e => enqueueRemoveEdgeTask(e.from, e.to));
@@ -451,7 +479,7 @@ function updateTopologyEdges() {
     rngEdges.forEach(e => enqueueEdgeTask(e.from, e.to));
   } else if (topology === "gg") {
     edges.forEach(e => enqueueRemoveEdgeTask(e.from, e.to));
-    const r = 100; // Threshold
+    const r = window.ggThreshold;  // jetzt dynamisch vom Slider
     const ggEdges = computeGGEdges(nodes, r);
     ggEdges.forEach(e => enqueueEdgeTask(e.from, e.to));
   } else if (topology === "chordal-ring") {
@@ -460,8 +488,19 @@ function updateTopologyEdges() {
     // 2) Ring + Chords neu aufbauen
     const crEdges = computeDynamicChordalRingEdges(nodes);
     crEdges.forEach(e => enqueueEdgeTask(e.from, e.to));
-  }
+  } else if (topology === "knn") {
+    // k-NN Graph: global neu berechnen anhand window.knnK
+    edges.forEach(e => enqueueRemoveEdgeTask(e.from, e.to));
+    const knnEdges = computeKNNEdges(nodes, window.knnK);
+    knnEdges.forEach(e => enqueueEdgeTask(e.from, e.to));
+  } else if (topology === 'grid') {
+    // 1) Alte Grid-Kanten wegshrinken
+    edges.forEach(e => enqueueRemoveEdgeTask(e.from, e.to));
 
+    // 2) alle 4-Nachbarschaften neu berechnen
+    const gridEdges = computeGridEdges(nodes, window.gridSize);
+    gridEdges.forEach(e => enqueueEdgeTask(e.from, e.to));
+  }
   // 3) Animation starten
   if (!animation.running) {
     animation.running = true;

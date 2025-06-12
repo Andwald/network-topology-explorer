@@ -1,5 +1,3 @@
-
-
 // Berechnet den EMST per Prim (O(N²)), gibt Liste von {from, to}-Edges zurück.
 function computeEMSTEdges(nodesArr) {
   const N = nodesArr.length;
@@ -155,7 +153,7 @@ function computeDynamicChordalRingEdges(nodesArr) {
   }
 
   // 2) Dynamische Chord-Länge: d = ceil(n / chordThreshold), mindestens 2
-  const d = Math.max(2, Math.ceil(n / chordThreshold));
+  const d = Math.max(2, Math.ceil(n / window.chordThreshold));
 
   // 3) Chords: für jeden Knoten i eine Kante zu (i + d) mod n (inkl. Wrap-around)
   for (let i = 0; i < n; i++) {
@@ -166,7 +164,66 @@ function computeDynamicChordalRingEdges(nodesArr) {
   return edges;
 }
 
+/**
+ * Berechnet k-NN-Graph: verbindet jeden Knoten mit seinen k nächsten Nachbarn.
+ * @param {Array} nodesArr Array von {x,y}
+ * @param {number} k Anzahl der nächsten Nachbarn
+ * @returns {Array} Liste von {from,to}
+ */
+function computeKNNEdges(nodesArr, k) {
+  const edges = [];
+  const N = nodesArr.length;
+  for (let i = 0; i < N; i++) {
+    // Distanzen sammeln
+    const dists = nodesArr
+      .map((n, j) => ({ idx: j, d: Math.hypot(nodesArr[i].x - n.x, nodesArr[i].y - n.y) }))
+      .filter(o => o.idx !== i)
+      .sort((a, b) => a.d - b.d)
+      .slice(0, k);
+    // Kanten hinzufügen
+    dists.forEach(o => {
+      edges.push({ from: nodesArr[i], to: nodesArr[o.idx] });
+    });
+  }
+  return edges;
+}
 
+/**
+ * Berechnet 4-Nachbarschafts-Kanten in einem grid-gerasterten Netzwerk.
+ * Jeder Knoten verbindet sich mit seinen direkten horizontalen und vertikalen Nachbarn.
+ * @param {Array<{x:number,y:number}>} nodesArr 
+ * @param {number} gridSize Abstand in Pixeln der Grid-Zellen
+ * @returns {Array<{from,to}>}
+ */
+function computeGridEdges(nodesArr, gridSize) {
+  const map = new Map();
+  // Map: "col,row" → node
+  nodesArr.forEach(n => {
+    const col = Math.round(n.x / gridSize);
+    const row = Math.round(n.y / gridSize);
+    map.set(`${col},${row}`, n);
+  });
+
+  const edges = [];
+  const seen  = new Set();
+  // Für jeden Knoten alle 4 Richtungen prüfen
+  for (let [key, node] of map) {
+    const [col, row] = key.split(',').map(Number);
+    [[1,0],[-1,0],[0,1],[0,-1]].forEach(([dx,dy]) => {
+      const neighKey = `${col+dx},${row+dy}`;
+      const neigh    = map.get(neighKey);
+      if (neigh) {
+        // Dedupe: sortiere die Keys
+        const id = [key, neighKey].sort().join('|');
+        if (!seen.has(id)) {
+          seen.add(id);
+          edges.push({ from: node, to: neigh });
+        }
+      }
+    });
+  }
+  return edges;
+}
 
 
 const topologyHandlers = {

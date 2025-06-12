@@ -87,28 +87,96 @@ html, body {
   color: #111;             /* Text in dunklem Grau/Schwarz */
 }
 
-/* Titel und Beschreibung */
-#topo-info .info-title {
-  margin: 0 0 0.5rem;
-  font-size: 1.1rem;
-  font-weight: bold;
-  color: #92400e;          /* dunkles Ocker für Überschrift */
-}
-#topo-info .info-desc {
-  margin: 0 0 0.75rem;
-  color: #333;
+/* ─────────────────────────────────────────────────────
+   Topo-Info Box (Dark UI mit blauem Akzent & Icons)
+───────────────────────────────────────────────────── */
+#topo-info {
+  background: #374151;             /* Dunkleres Grau als Sidebar */
+  border: 1px solid #3b82f6;       /* Kräftiges Blau als Rahmen */
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1rem 0;
+  color: #f9fafb;                  /* Weißer Text */
+  font-family: sans-serif;
+  overflow-y: auto;                /* Scrollbar bei Bedarf */
 }
 
-/* Pros & Cons Listen: weniger knallig */
-#topo-info ul {
-  margin: 0 0 0.5rem 1rem;
+/* Header */
+#topo-info .info-header {
+  background: #2563eb;             /* Blau-600 */
+  padding: 0.75rem;
+  border-radius: 6px 6px 0 0;
+  text-align: center;
+}
+#topo-info .info-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #f9fafb;                  /* Weißer Text */
+}
+
+/* Beschreibung */
+#topo-info .info-desc {
+  margin: 0.75rem 0;
+  line-height: 1.4;
+  color: #d1d5db;                  /* Hellgrau für angenehme Lesbarkeit */
+}
+
+/* Pros & Cons untereinander stapeln */
+#topo-info .info-features {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Einzelne Pros/Cons-Boxen */
+#topo-info .feature {
+  background: #4b5563;             /* Grau-600 */
+  border: 1px solid #3b82f6;       /* Blau-500 */
+  border-radius: 6px;
+  padding: 0.75rem;
+  color: #f9fafb;
+}
+#topo-info .feature h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+/* Listen ohne Standard-Bullets, nur Icon-Marker */
+#topo-info .feature ul {
+  list-style: none;
+  margin: 0;
   padding: 0;
 }
+
+/* Pros: heller Haken */
 #topo-info .pros li {
-  color: #15803d;          /* smaragd-Grün */
+  color: #6ee7b7;                  /* Emerald-300 */
+  margin-bottom: 0.25rem;
 }
+#topo-info .pros li::before {
+  content: "✔︎";
+  margin-right: 0.5ch;
+  color: #6ee7b7;
+}
+
+/* Cons: helles Kreuz */
 #topo-info .cons li {
-  color: #b91c1c;          /* sattes Dunkel-Rot */
+  color: #fca5a5;                  /* Red-300 */
+  margin-bottom: 0.25rem;
+}
+#topo-info .cons li::before {
+  content: "✖︎";
+  margin-right: 0.5ch;
+  color: #fca5a5;
+}
+/* Überschriften in Pros & Cons einfärben */
+#topo-info .pros h3 {
+  color: #6ee7b7;    /* Helles Grün (Emerald-300) */
+}
+#topo-info .cons h3 {
+  color: #fca5a5;    /* Helles Rot (Red-300) */
 }
 
 /* Icon-Grids */
@@ -149,7 +217,6 @@ html, body {
   box-shadow: 0 0 0 2px rgba(16,185,129,0.5); /* leichter Glow */
   transform: scale(0.95);           /* sanfte Verkleinerung */
 }
-
 
 /* Apply-Button */
 .apply-btn {
@@ -200,4 +267,47 @@ html, body {
 
 #speed-control input[type="range"] {
   width: 100px;
+}
+
+/* ─────────────────────────────────────────────────────
+   Bottom-Controls (unten links im Canvas)
+───────────────────────────────────────────────────── */
+#bottom-controls {
+  position: absolute;
+  bottom: 1rem;
+  left: 1rem;
+  z-index: 2;                   /* über dem Canvas */
+  pointer-events: auto;         /* fängt Klicks ab */
+  background: rgba(31, 41, 55, 0.85);
+  padding: 0.75rem;
+  border-radius: 6px;
+  color: #f9fafb;
+  font-size: 0.875rem;
+}
+#bottom-controls label {
+  margin-right: 0.5ch;
+  white-space: nowrap;
+}
+#bottom-controls input[type="range"] {
+  width: 200px;   /* etwas breiter für 10–1000 */
+}
+#bottom-controls select {
+  vertical-align: middle;
+}
+
+#canvas-container canvas {
+  position: relative;
+  z-index: 1;
+  pointer-events: auto;
+}
+
+#speed-control,
+#bottom-controls {
+  z-index: 2;
+  pointer-events: auto;
+}
+
+/* nothing else in #canvas-container should eat clicks */
+#canvas-container > div:not(#speed-control):not(#bottom-controls) {
+  pointer-events: none;
 }

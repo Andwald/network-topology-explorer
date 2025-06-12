@@ -77,6 +77,18 @@ const topologyData = {
     desc: "Ring plus fixed-step chords based on node count.",
     pros: ["Improves diameter over simple ring", "Regular topology"],
     cons: ["Assumes circular ordering", "Chaotic on arbitrary layouts"]
+  },
+  "knn": {
+    title: "k-Nearest Neighbors Graph",
+    desc: "Each node connects to its k closest neighbors.",
+    pros: ["Controls local connectivity", "Reflects clustering structure"],
+    cons: ["Needs sorting distances", "May be asymmetric"]
+  },
+  "grid": {
+    title: "Grid Graph",
+    desc: "Snaps nodes to a fixed grid and connects 4-neighbors (up/down/left/right).",
+    pros: ["Structured layout", "Simple neighbor logic"],
+    cons: ["Depends on grid size", "May distort true distances"]
   }
 };
 
@@ -87,32 +99,30 @@ function showTopologyInfo(topoKey) {
     return;
   }
   const data = topologyData[topoKey] || {};
-  // Setze Titel
-  info.html(`
-    <h3 class="info-title">${data.title || topoKey}</h3>
-    <p class="info-desc">${data.description || ''}</p>
-    <div class="pros">${(data.pros || []).map(p => `<li>${p}</li>`).join('')}</div>
-    <div class="cons">${(data.cons || []).map(c => `<li>${c}</li>`).join('')}</div>
-  `);
+
+  // Baue neuen HTML-Block
+  const html = `
+    <div class="info-header">
+      <h2 id="topo-name">${data.title || topoKey}</h2>
+    </div>
+    <div class="info-desc">
+      <p>${data.desc || ''}</p>
+    </div>
+    <div class="info-features">
+      <div class="feature pros">
+        <h3>Pros</h3>
+        <ul>
+          ${(data.pros || []).map(p => `<li>${p}</li>`).join('')}
+        </ul>
+      </div>
+      <div class="feature cons">
+        <h3>Cons</h3>
+        <ul>
+          ${(data.cons || []).map(c => `<li>${c}</li>`).join('')}
+        </ul>
+      </div>
+    </div>
+  `;
+
+  info.html(html);
 }
-
-
-/** TODO
-  "chordal ring": { gerade nur Schritt 1 & 2. müsste Log schritt machen
-    title: "Chordal Ring",
-    desc: "Ring plus fixed-step chords based on node indices.",
-    pros: ["Improves diameter over simple ring", "Regular topology"],
-    cons: ["Assumes circular ordering", "Chaotic on arbitrary layouts"]
-  },
-  "k-nn graph": {
-    title: "k-Nearest Neighbors Graph",
-    desc: "Each node connects to its k closest neighbors.",
-    pros: ["Controls local connectivity", "Reflects clustering structure"],
-    cons: ["Needs sorting distances", "May be asymmetric"]
-  },"grid": {
-    title: "Grid Graph",
-    desc: "Snaps nodes to a fixed grid and connects 4-neighbors (up/down/left/right).",
-    pros: ["Structured layout", "Simple neighbor logic"],
-    cons: ["Depends on grid size", "May distort true distances"]
-  }
- */
