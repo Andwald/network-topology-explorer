@@ -1,0 +1,21 @@
+src/
+├─ main.js
+├─ core/
+│  ├─ state.js
+│  └─ tasks.js
+├─ topologies/
+│  ├─ binary-tree.js  …  star.js
+│  └─ index.js
+├─ algorithms/
+│  └─ index.js
+├─ renderers/
+│  └─ p5Renderer.js
+├─ ui/
+│  ├─ controls.js
+│  ├─ info.js
+│  ├─ hint.js
+│  └─ nodes.js
+└─ utils/
+   ├─ grid.js
+   ├─ jsonIO.js
+   └─ exporters.js

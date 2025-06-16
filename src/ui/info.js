@@ -62,9 +62,9 @@ const topologyData = {
   },
   "rng": {
     title: "Relative Neighborhood Graph",
-    desc: "Connects A–B only if no other node is closer to both A and B than they are to each other.",
-    pros: ["Sparser than Gabriel", "Preserves nearest relations"],
-    cons: ["Computationally expensive"]
+    desc: "Connects two nodes A–B only if there is no other node C that is simultaneously closer to A and to B than A and B are to each other.",
+    pros: ["Sparser than the Gabriel Graph","Preserves local neighborhood structure"],
+    cons: ["O(N³) time complexity in the naive implementation","Edge count can vary unpredictably"]
   },
   "gg": {
     title: "Geometric Graph",
@@ -92,37 +92,23 @@ const topologyData = {
   }
 };
 
-function showTopologyInfo(topoKey) {
-  const info = select('#topo-info');
-  if (!info) {
-    console.error('showTopologyInfo: #topo-info Element nicht gefunden');
-    return;
-  }
+/**
+ * Aktualisiert die Info-Box anhand der ausgewählten Topologie.
+ * @param {string} topoKey
+ */
+export function showTopologyInfo(topoKey) {
   const data = topologyData[topoKey] || {};
-
-  // Baue neuen HTML-Block
-  const html = `
-    <div class="info-header">
-      <h2 id="topo-name">${data.title || topoKey}</h2>
-    </div>
-    <div class="info-desc">
-      <p>${data.desc || ''}</p>
-    </div>
+  const info = document.getElementById('topo-info');
+  info.innerHTML = `
+    <div class="info-header"><h2>${data.title || topoKey}</h2></div>
+    <div class="info-desc"><p>${data.desc || ''}</p></div>
     <div class="info-features">
       <div class="feature pros">
-        <h3>Pros</h3>
-        <ul>
-          ${(data.pros || []).map(p => `<li>${p}</li>`).join('')}
-        </ul>
+        <h3>Pros</h3><ul>${(data.pros||[]).map(p => `<li>${p}</li>`).join('')}</ul>
       </div>
       <div class="feature cons">
-        <h3>Cons</h3>
-        <ul>
-          ${(data.cons || []).map(c => `<li>${c}</li>`).join('')}
-        </ul>
+        <h3>Cons</h3><ul>${(data.cons||[]).map(c => `<li>${c}</li>`).join('')}</ul>
       </div>
     </div>
   `;
-
-  info.html(html);
 }

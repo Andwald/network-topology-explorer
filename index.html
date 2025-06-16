@@ -4,8 +4,6 @@
   <meta charset="UTF-8" />
   <title>Network Topology Explorer</title>
   <link rel="stylesheet" href="style.css" />
-  <script src="https://unpkg.com/delaunator@5.0.0/delaunator.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
 </head>
 <body>
   <div id="app">
@@ -53,14 +51,8 @@
     </main>
   </div>
 
-  <!-- Skripte -->
-  <script src="utils/jsonIO.js"></script>
-  <script src="ui/controls.js"></script>
-  <script src="ui/hint.js"></script>
-  <script src="ui/nodes.js"></script>
-  <script src="ui/info.js"></script>
-  <script src="topologies/topologyRenderer.js"></script>
-  <script src="algorithms/processor.js"></script>
-  <script src="main.js"></script>
+  <!-- Module-Einstiegspunkt -->
+  <script type="module" src="https://cdn.jsdelivr.net/npm/p5@1.9.0/lib/p5.min.js"></script>
+  <script type="module" src="src/main.js"></script>
 </body>
 </html>
