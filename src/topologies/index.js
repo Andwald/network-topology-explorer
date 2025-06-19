@@ -1,4 +1,5 @@
 import * as ring        from './ring.js';
+import * as wheel from './wheel.js';
 import * as star        from './star.js';
 import * as binaryTree  from './binary-tree.js';
 import * as randomTree  from './random-tree.js';
@@ -11,7 +12,6 @@ import * as gabriel     from './gabriel.js';
 import * as rng         from './rng.js';
 import * as gg          from './gg.js';
 import * as chordalRing from './chordal-ring.js';
-import * as knn         from './knn.js';
 import * as grid        from './grid.js';
 
 export const topologies = {
@@ -21,6 +21,13 @@ export const topologies = {
     diffUndo: ring.diffUndo,
     diffFull: ring.diffFull,
     setupBottomControls: ring.setupBottomControls
+  },
+  wheel: {
+    snap: wheel.snap,
+    diffAdd: wheel.diffAdd,
+    diffUndo: wheel.diffUndo,
+    diffFull: wheel.diffFull,
+    setupBottomControls: wheel.setupBottomControls
   },
   star: {
     snap: star.snap,
@@ -105,13 +112,6 @@ export const topologies = {
     diffUndo: chordalRing.diffUndo,
     diffFull: chordalRing.diffFull,
     setupBottomControls: chordalRing.setupBottomControls
-  },
-  knn: {
-    snap: knn.snap,
-    diffAdd: knn.diffAdd,
-    diffUndo: knn.diffUndo,
-    diffFull: knn.diffFull,
-    setupBottomControls: knn.setupBottomControls
   },
   grid: {
     snap: grid.snap,

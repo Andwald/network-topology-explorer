@@ -74,37 +74,24 @@ setupControls({
   onStepBack() {
     if (state.nodes.length === 0) return;
 
-    // 1) Stoppe Animation & nimm den letzten Node aus dem Modell
-    state.animation.running = false;
+    // letzten Knoten aus dem Modell nehmen
     const removedNode = state.nodes.pop();
 
-    // 2) Verwerfe alte Tasks
-    state.animation.queue.length = 0;
-    state.animation.current = null;
+    // Δ-Undo berechnen
+    const { removes, adds } = topologies[state.topology].diffUndo(state.nodes, removedNode);
 
-    // 3) bumpVersion um Alt-Tasks zu ignorieren
-    state.bumpVersion();
-
-    // 4) Hole just jene Kanten, die remove/add sollen
-    const { removes, adds } =
-      topologies[state.topology].diffUndo(state.nodes, removedNode);
-
-    // 5) Enqueue Removal-Tasks (rot)
+    // alle Remove- und Add-Tasks hinten an die Queue hängen
     removes.forEach(({ from, to }) =>
-        enqueueRemoveEdgeTask(from, to, currentSpeed.get())
+      enqueueRemoveEdgeTask(from, to, currentSpeed.get())
     );
-    // 6) Enqueue Add-Tasks (grün)
     adds.forEach(({ from, to }) =>
-        enqueueEdgeTask(from, to, currentSpeed.get())
+      enqueueEdgeTask(from, to, currentSpeed.get())
     );
 
-    // 7) UI updaten
+    // UI aktualisieren und Animation weitermachen
     updateBottomControls();
-
-    // 8) Loop & Erst-Frame
     state.animation.running = true;
     startLoop();
-    requestRedraw();
   },
   onReset() {
     state.animation.running = false;

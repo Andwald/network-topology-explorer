@@ -6,6 +6,12 @@ const topologyData = {
     pros: ["Simple", "Uniform degree", "Closed path"],
     cons: ["High diameter", "No redundancy beyond the ring"]
   },
+  "wheel": {
+    title: "Wheel Graph",
+    desc: "One central hub with all other nodes forming a cycle around it.",
+    pros: ["Very low diameter (hub shortcuts)","Cyclic redundancy on outer ring"],
+    cons: ["Single point of failure at the hub","Hub can become a bottleneck"]
+  },
   "star": {
     title: "Star",
     desc: "One central hub node connects to all others. Ideal for hub-and-spoke models.",
@@ -77,12 +83,6 @@ const topologyData = {
     desc: "Ring plus fixed-step chords based on node count.",
     pros: ["Improves diameter over simple ring", "Regular topology"],
     cons: ["Assumes circular ordering", "Chaotic on arbitrary layouts"]
-  },
-  "knn": {
-    title: "k-Nearest Neighbors Graph",
-    desc: "Each node connects to its k closest neighbors.",
-    pros: ["Controls local connectivity", "Reflects clustering structure"],
-    cons: ["Needs sorting distances", "May be asymmetric"]
   },
   "grid": {
     title: "Grid Graph",

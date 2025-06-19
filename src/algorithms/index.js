@@ -2,15 +2,16 @@
 import { runNearest } from './nearest.js';
 import { run2Nearest } from './2nearest.js';
 import { runRandom } from './random.js';
+import { runKnn }       from './knn.js';
 
 /**
  * Wählt basierend auf dem Schlüssel 'algorithm' die passende Run-Funktion.
  */
 const algorithmMap = {
-  'nearest': runNearest,
+  'nearest':   runNearest,
   '2-nearest': run2Nearest,
-  'random': runRandom
-  // Weitere Algorithmen hier ergänzen
+  'random':    runRandom,
+  'knn':       runKnn
 };
 
 /**

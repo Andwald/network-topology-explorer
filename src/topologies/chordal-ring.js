@@ -37,52 +37,46 @@ function dynamicChordalEdges(nodesArr) {
 
 /**
  * Δ-Add: berechnet die Kanten-Deltas beim Hinzufügen von newNode.
- * - Wenn sich c nicht ändert: nur lokale Ring- und Chord-Deltas
- * - Sonst: kompletter Rebuild (alle alten Kanten entfernen + alle neu berechnen)
+ * - Wenn sich c nicht ändert: lokale Updates
+ * - Sonst: kompletter Rebuild
  *
- * @param {Array<object>} oldNodes   Bestehende Knoten (Länge = n)
- * @param {object}        newNode    Neu hinzugefügter Knoten (Index n)
+ * @param {Array<object>} oldNodes   Bestehende Knoten
+ * @param {object}        newNode    Neu hinzugefügter Knoten
  * @returns {{removes:Array, adds:Array}}
  */
 export function diffAdd(oldNodes, newNode) {
   const n = oldNodes.length;
   if (n < 1) {
-    // erster Knoten → nichts zu tun
     return { removes: [], adds: [] };
   }
-
-  // alter und neuer chord-Schritt
   const oldC = Math.max(2, Math.ceil(n     / chordThreshold));
-  const newC = Math.max(2, Math.ceil((n+1) / chordThreshold));
-
-  // === FALL A: Schritt bleibt gleich → nur lokale Updates ===
+  const newC = Math.max(2, Math.ceil((n + 1) / chordThreshold));
   if (oldC === newC) {
-    const first     = oldNodes[0];
-    const last      = oldNodes[n - 1];
-    const M         = n + 1;      // neue Gesamtzahl
-    const c         = oldC;
-    const removes   = [];
-    const adds      = [];
+    const first   = oldNodes[0];
+    const last    = oldNodes[n - 1];
+    const M       = n + 1;
+    const c       = oldC;
+    const removes = [];
+    const adds    = [];
 
-    // 1) Ring: letzte Ring-Kante löschen, und Ring um den neuen Knoten erweitern
+    // 1) Ring: Schließe den Ring um newNode
     removes.push({ from: last, to: first });
     adds.push(
       { from: last,    to: newNode },
       { from: newNode, to: first   }
     );
 
-    // 2) Alte Chord-Kanten von ‚last‘ entfernen (maximal n Stück)
+    // 2) Alte Chord-Kanten, die neue Schritt-Stellen betreffen
     const chordCount = Math.min(c, n);
     for (let i = 1; i <= chordCount; i++) {
-      const uIdx = n - i;                         // immer 0 ≤ uIdx < n
-      const vIdx = (uIdx + c + 1) % (n + 1);      // im Ring mit neuem Knoten
+      const uIdx = n - i;
+      const vIdx = (uIdx + c + 1) % (n + 1);
       const u = oldNodes[uIdx];
       const v = (vIdx < n ? oldNodes[vIdx] : newNode);
       removes.push({ from: u, to: v });
     }
 
-    // 3) Neue Chord-Kanten, die ‚newNode‘ betreffen:
-    // for i=1..c: Kante (n-(i-1)) → (n-(i-1) + c) % M hinzufügen
+    // 3) Neue Chord-Kanten durch newNode und umliegende
     for (let i = 1; i <= c; i++) {
       const uIdx = n - (i - 1);
       const vIdx = (uIdx + c) % M;
@@ -91,14 +85,14 @@ export function diffAdd(oldNodes, newNode) {
       adds.push({ from: u, to: v });
     }
 
-    // 4) Chord-Kante zur newNode einzeln
-    const u = (c < n ? oldNodes[n-c] : first);
-    adds.push({from:u, to:newNode})
+    // Zusätzliche Chord-Kante für newNode
+    const u0 = (c < n ? oldNodes[n - c] : first);
+    adds.push({ from: u0, to: newNode });
 
     return { removes, adds };
   }
 
-  // === FALL B: Schritt ändert sich → kompletter Rebuild ===
+  // vollständiger Rebuild bei c-Änderung
   return {
     removes: dynamicChordalEdges(oldNodes),
     adds:    dynamicChordalEdges(oldNodes.concat(newNode))
@@ -106,77 +100,25 @@ export function diffAdd(oldNodes, newNode) {
 }
 
 /**
- * Δ-Undo: berechnet die Kanten-Deltas beim Rückgängigmachen
- * des zuletzt hinzugefügten Knotens (removedNode).
- * - Wenn sich c nicht ändert: nur lokale Ring- und Chord-Deltas
- * - Sonst: kompletter Rebuild (alle alten Kanten entfernen + alle neu berechnen)
+ * Δ-Undo: invertiert diffAdd, um beim Rückgängigmachen
+ * genau die beim Add entfernten/ hinzugefügten Kanten umzukehren.
  *
- * @param {Array<object>} oldNodes     Knoten **nach** dem Entfernen (Länge = n)
- * @param {object}        removedNode  der entfernte Knoten (ursprünglich an Index n)
+ * @param {Array<object>} oldNodes    Knoten **nach** Entfernen
+ * @param {object}        removedNode der entfernte Knoten
  * @returns {{removes:Array, adds:Array}}
  */
 export function diffUndo(oldNodes, removedNode) {
-  const n = oldNodes.length;
-  const m = n + 1;             // Zustand vor dem Entfernen
-  if (m < 2) {
-    // nur 0 oder 1 Knoten insgesamt → nix zu tun
-    return { removes: [], adds: [] };
-  }
-
-  // alter und neuer Chord-Schritt
-  const oldC = Math.max(2, Math.ceil(m     / chordThreshold));
-  const newC = Math.max(2, Math.ceil(n     / chordThreshold));
-
-  // === FALL A: Schritt bleibt gleich → nur lokale Updates ===
-  if (oldC === newC) {
-    const first   = oldNodes[0];
-    const last    = oldNodes[n - 1];
-    const c       = oldC;
-    const removes = [];
-    const adds    = [];
-
-    // 1) Ring-Delta: alte Ring-Kanten via removedNode löschen, neuen Ring schließen
-    removes.push(
-      { from: last,        to: removedNode },
-      { from: removedNode, to: first       }
-    );
-    adds.push({ from: last, to: first });
-
-    // 2) Alte Chord-Kanten, die removedNode betreffen, löschen
-    //    (im Graph mit m Knoten)
-    {
-      const full = oldNodes.concat(removedNode);
-      dynamicChordalEdges(full)
-        .filter(e => e.from === removedNode || e.to === removedNode)
-        .forEach(e => removes.push(e));
-    }
-
-    // 3) Neue Chord-Kanten, die first oder last betreffen,
-    //    im Graph mit n Knoten (ohne removedNode) nach dem Pop
-    {
-      dynamicChordalEdges(oldNodes)
-        .filter(e =>
-          e.from === first  || e.to === first ||
-          e.from === last   || e.to === last
-        )
-        .forEach(e => adds.push(e));
-    }
-
-    return { removes, adds };
-  }
-
-  // === FALL B: Schritt hat sich geändert → kompletter Rebuild ===
+  const { removes: wasRemoved, adds: wasAdded } = diffAdd(oldNodes, removedNode);
   return {
-    removes: dynamicChordalEdges(oldNodes.concat(removedNode)),
-    adds:    dynamicChordalEdges(oldNodes)
+    // entferne alle Kanten, die beim Add hinzugefügt wurden
+    removes: wasAdded,
+    // füge alle Kanten wieder hinzu, die beim Add entfernt wurden
+    adds: wasRemoved
   };
 }
 
 /**
  * Δ-Full: kompletter Neuaufbau beim Topologie-Wechsel.
- * Externe Logik entfernt vorab alle alten Kanten, hier nur Adds.
- * @param {Array<{x:number,y:number}>} allNodes Alle aktuellen Knoten
- * @returns {{removes:Array, adds:Array}}
  */
 export function diffFull(allNodes) {
   return { removes: [], adds: dynamicChordalEdges(allNodes) };
@@ -184,25 +126,17 @@ export function diffFull(allNodes) {
 
 /**
  * Initialisierung des Bottom-Control-Panels für Chordal Ring.
- * @param {HTMLElement} container
- * @param {Function} requestRedraw
  */
 export function setupBottomControls(container, requestRedraw) {
   container.innerHTML = `
-    <label for="chordThreshold">Max Hops:</label>
+    <label for=\"chordThreshold\">Max Hops:</label>
     <input
-      type="range"
-      id="chordThreshold"
-      min="2"
-      max="50"
-      step="1"
-      value="${chordThreshold}"
+      type=\"range\" id=\"chordThreshold\" min=\"2\" max=\"50\" step=\"1\" value=\"${chordThreshold}\"
     >
-    <span id="chordThresholdVal">${chordThreshold}</span>
+    <span id=\"chordThresholdVal\">${chordThreshold}</span>
   `;
   const slider = container.querySelector('#chordThreshold');
   const label  = container.querySelector('#chordThresholdVal');
-
   slider.addEventListener('input', () => {
     label.textContent = slider.value;
   });

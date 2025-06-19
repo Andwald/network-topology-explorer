@@ -37,6 +37,7 @@ export function setupControls({
     // ─── Topology-Icons ────────────────────────────────────────
   const topoItems = [
     { key: 'ring',          icon: 'icons/ring.svg',           label: 'Ring' },
+    { key: 'wheel',         icon: 'icons/wheel.svg',          label: 'Wheel' },
     { key: 'path',          icon: 'icons/path.svg',           label: 'Path' },
     { key: 'star',          icon: 'icons/star.svg',           label: 'Star' },
     { key: 'binary-tree',   icon: 'icons/binary-tree.svg',    label: 'Binary Tree' },
@@ -49,7 +50,6 @@ export function setupControls({
     { key: 'rng',           icon: 'icons/rng.svg',            label: 'RNG' },
     { key: 'gg',            icon: 'icons/gg.svg',             label: 'Geometric Graph' },
     { key: 'chordal-ring',  icon: 'icons/chordal-ring.svg',   label: 'Chordal Ring' },
-    { key: 'knn',           icon: 'icons/knn.svg',            label: 'k-NN Graph' },
     { key: 'grid',          icon: 'icons/grid.svg',           label: 'Grid Graph' }
   ];
   const topoGrid = document.getElementById('topo-grid');

@@ -62,7 +62,11 @@ function animateStep(p) {
     p.line(task.from.x, task.from.y, ix, iy);
     if (t >= 1) {
       if (task.version === topologyVersion) {
-        edges.push({ from: task.from, to: task.to });
+        // Nur hinzufügen, wenn die Kante nicht bereits existiert
+        const exists = edges.find(e => e.from === task.from && e.to === task.to);
+        if (!exists) {
+          edges.push({ from: task.from, to: task.to });
+        }
       }
       animation.current = null;
     }
@@ -77,11 +81,13 @@ function animateStep(p) {
     p.pop();
     if (task.progress >= task.duration) {
       if (task.version === topologyVersion) {
-        // remove that edge
-        const i = edges.findIndex(e =>
+        // Entferne alle Vorkommen dieser Kante
+        let idx;
+        while ((idx = edges.findIndex(e =>
           e.from === task.from && e.to === task.to
-        );
-        if (i !== -1) edges.splice(i, 1);
+        )) !== -1) {
+          edges.splice(idx, 1);
+        }
       }
       animation.current = null;
     }
@@ -90,12 +96,46 @@ function animateStep(p) {
 
 let sketchInstance;
 export function startRenderer({ speed }) {
-  const sketch = (p) => {
+  const sketch = p => {
+    let canvasEl;
     p.setup = () => {
       const container = document.getElementById('canvas-container');
-      p.createCanvas(container.offsetWidth, container.offsetHeight)
-       .parent('canvas-container');
-      p.noLoop();  // wir steuern den Loop manuell
+      // Canvas erzeugen und direkt in eine Variable packen
+      canvasEl = p.createCanvas(container.offsetWidth, container.offsetHeight)
+                    .parent('canvas-container');
+
+      // Statt p.mousePressed nun canvasEl.mousePressed – filtert Klicks außerhalb
+      canvasEl.mousePressed(() => {
+        // Nur gültige Klicks innerhalb des Canvas auswerten
+        if (
+          p.mouseX < 0 || p.mouseY < 0 ||
+          p.mouseX > p.width || p.mouseY > p.height
+        ) return;
+
+        const cfg = topologies[currentTopology];
+        const { x, y } = cfg.snap(p.mouseX, p.mouseY);
+
+        // Node-Task anlegen
+        enqueueNodeTask(x, y, speed.get());
+
+        // Edge-Deltas berechnen
+        const newNode = nodes[nodes.length - 1];
+        const oldList = nodes.slice(0, -1);
+        const { removes, adds } = cfg.diffAdd(oldList, newNode);
+
+        removes.forEach(({ from, to }) =>
+          enqueueRemoveEdgeTask(from, to, speed.get())
+        );
+        adds.forEach(({ from, to }) =>
+          enqueueEdgeTask(from, to, speed.get())
+        );
+
+        // Animation starten
+        animation.running = true;
+        p.loop();
+      });
+
+      p.noLoop();  // Loop manuell starten
     };
 
     p.draw = () => {
@@ -106,37 +146,6 @@ export function startRenderer({ speed }) {
       drawNodes(p);
       if (animation.running) animateStep(p);
     };
-
-    p.mousePressed = () => {
-      if (
-        p.mouseX < 0 || p.mouseY < 0 ||
-        p.mouseX > p.width || p.mouseY > p.height
-      ) return;
-
-      const cfg = topologies[currentTopology];
-
-      // 1) Place node immediately
-      const { x, y } = cfg.snap(p.mouseX, p.mouseY);
-      enqueueNodeTask(x, y, speed.get());
-
-      // 2) Compute edge‐deltas
-      const newNode = nodes[nodes.length - 1];
-      const oldList = nodes.slice(0, -1);
-
-      // Δ‐add for this click
-      const { removes, adds } = cfg.diffAdd(oldList, newNode);
-      removes.forEach(({ from, to }) =>
-        enqueueRemoveEdgeTask(from, to, speed.get())
-      );
-      adds.forEach(({ from, to }) =>
-        enqueueEdgeTask(from, to, speed.get())
-      );
-
-      // 3) Fire the animation loop
-      animation.running = true;
-      p.loop();
-    };
-
     p.windowResized = () => {
       const container = document.getElementById('canvas-container');
       p.resizeCanvas(container.offsetWidth, container.offsetHeight);
