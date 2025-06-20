@@ -8,6 +8,14 @@ function dynamicWheelEdges(nodesArr) {
   const hub = nodesArr[0];
   const ring = nodesArr.slice(1);
 
+  // Für <2 Außenknoten nur spokes (kein Ring)
+  if (ring.length < 2) {
+    ring.forEach(node => {
+      edges.push({ from: hub, to: node });
+    });
+    return edges;
+  }
+
   // 1) Ring auf den Außenknoten
   for (let i = 0; i < ring.length; i++) {
     edges.push({ from: ring[i], to: ring[(i + 1) % ring.length] });
@@ -27,8 +35,8 @@ export function snap(mx, my) {
 
 export function diffAdd(oldNodes, newNode) {
   const n = oldNodes.length;
+  // Für 0 oder 1 alten Knoten einfach komplette Rebuild nutzen
   if (n < 2) {
-    // Fallback auf kompletten Rebuild für kleine Node-Zahlen
     return {
       removes: [],
       adds: dynamicWheelEdges(oldNodes.concat(newNode))
@@ -40,14 +48,12 @@ export function diffAdd(oldNodes, newNode) {
   const first = ring[0];
   const last  = ring[ring.length - 1];
 
-  // 1) Ring-Abschluss entfernen
-  const removes = [
-    { from: last, to: first }
-  ];
+  // 1) Alte Abschlusskante im Ring entfernen
+  const removes = [{ from: last, to: first }];
 
-  // 2) Neue Kanten: 
-  //    a) Ring: last->newNode, newNode->first
-  //    b) Spoke: hub->newNode
+  // 2) Neue Kanten:
+  //    a) Neuer Ringabschluß: last->newNode, newNode->first
+  //    b) Neuer Spoke:      hub->newNode
   const adds = [
     { from: last,    to: newNode },
     { from: newNode, to: first   },
@@ -59,8 +65,17 @@ export function diffAdd(oldNodes, newNode) {
 
 export function diffUndo(oldNodes, removedNode) {
   const n = oldNodes.length;
+  // Keine Knoten übrig: nichts zu tun
   if (n < 1) {
     return { removes: [], adds: [] };
+  }
+  // Bei nur einem verbleibenden Knoten: entferne den Spoke
+  if (n < 2) {
+    const hub = oldNodes[0];
+    return {
+      removes: dynamicWheelEdges(oldNodes.concat(removedNode)),
+      adds: []
+    };
   }
 
   const hub = oldNodes[0];
@@ -68,17 +83,15 @@ export function diffUndo(oldNodes, removedNode) {
   const first = ring[0];
   const last  = ring[ring.length - 1];
 
-  // 1) Entferne Kanten, die beim Add hinzugefügt wurden:
+  // 1) Kanten entfernen, die beim Add hinzugefügt wurden
   const removes = [
     { from: last,        to: removedNode },
     { from: removedNode, to: first       },
     { from: hub,         to: removedNode }
   ];
 
-  // 2) Füge Ring-Abschluss wieder hinzu:
-  const adds = [
-    { from: last, to: first }
-  ];
+  // 2) Abschlusskante im Ring wiederherstellen
+  const adds = [{ from: last, to: first }];
 
   return { removes, adds };
 }

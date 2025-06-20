@@ -1,10 +1,13 @@
 import * as ring        from './ring.js';
-import * as wheel from './wheel.js';
+import * as wheel       from './wheel.js';
 import * as star        from './star.js';
+import * as ladder      from './ladder.js';
 import * as binaryTree  from './binary-tree.js';
+import * as karyTree    from './k-ary-tree.js';
 import * as randomTree  from './random-tree.js';
 import * as nnt         from './nnt.js';
 import * as complete    from './complete.js';
+import * as kpartite    from './k-partite.js';
 import * as path        from './path.js';
 import * as emst        from './emst.js';
 import * as delaunay    from './delaunay.js';
@@ -36,12 +39,26 @@ export const topologies = {
     diffFull: star.diffFull,
     setupBottomControls: star.setupBottomControls
   },
+  ladder: {
+    snap: ladder.snap,
+    diffAdd: ladder.diffAdd,
+    diffUndo: ladder.diffUndo,
+    diffFull: ladder.diffFull,
+    setupBottomControls: ladder.setupBottomControls
+  },
   'binary-tree': {
     snap: binaryTree.snap,
     diffAdd: binaryTree.diffAdd,
     diffUndo: binaryTree.diffUndo,
     diffFull: binaryTree.diffFull,
     setupBottomControls: binaryTree.setupBottomControls
+  },
+  'k-ary-tree': {
+    snap: karyTree.snap,
+    diffAdd: karyTree.diffAdd,
+    diffUndo: karyTree.diffUndo,
+    diffFull: karyTree.diffFull,
+    setupBottomControls: karyTree.setupBottomControls
   },
   'random-tree': {
     snap: randomTree.snap,
@@ -63,6 +80,13 @@ export const topologies = {
     diffUndo: complete.diffUndo,
     diffFull: complete.diffFull,
     setupBottomControls: complete.setupBottomControls
+  },
+  'k-partite': {
+    snap:                 kpartite.snap,
+    diffAdd:              kpartite.diffAdd,
+    diffUndo:             kpartite.diffUndo,
+    diffFull:             kpartite.diffFull,
+    setupBottomControls:  kpartite.setupBottomControls
   },
   path: {
     snap: path.snap,

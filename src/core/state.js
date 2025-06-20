@@ -26,6 +26,22 @@ export const animation = {
   current: null
 };
 
+export let kAryK = 3;
+export function setKAryK(val) {
+  kAryK = val;
+}
+
+// K-partite graph info
+export let kPartiteK = 2;
+export function setKPartiteK(val) {
+  kPartiteK = val;
+}
+
+export let kPartiteMode = 'alternating';
+export function setKPartiteMode(val) {
+  kPartiteMode = val;
+}
+
 // Version, um veraltete Animationen zu ignorieren
 export let topologyVersion = 0;
 export function bumpVersion() {

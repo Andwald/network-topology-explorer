@@ -18,11 +18,23 @@ const topologyData = {
     pros: ["Minimal diameter", "Easy central control"],
     cons: ["Single point of failure", "Hub bottleneck"]
   },
+  "ladder": {
+    title: "Ladder Graph",
+    desc: "Two parallel paths with rungs between each pair of nodes.",
+    pros: ["Simple mesh structure", "Short diameter"],
+    cons: ["Uniform degree", "No hierarchical structure"]
+  },
   "binary-tree": {
     title: "Binary Tree",
     desc: "Heap-style tree: node i’s parent is at ⌊(i–1)/2⌋. Good for hierarchical structures.",
     pros: ["Log₂(N) depth", "Simple parent calculation"],
     cons: ["Branching increases", "Root is critical"]
+  },
+  "k-ary-tree": {
+    title: "k-ary Tree",
+    desc:  "Generalization of a binary tree where each parent can have up to k children.",
+    pros: ["Flatter structure than a binary tree for large k","Simple insertion logic"],
+    cons: ["Can become complex and unbalanced for large k","No inherent balancing mechanism"]
   },
   "random-tree": {
     title: "Random Tree",
@@ -41,6 +53,12 @@ const topologyData = {
     desc: "Every node connects to every other. Only sensible for very small N.",
     pros: ["Fully connected"],
     cons: ["O(N²) edges", "Not scalable"]
+  },
+  "k-partite": {
+    title: "k-Partite Graph",
+    desc:  "Partitions nodes into k groups (round-robin or custom) and connects all cross-group pairs.",
+    pros: ["Generalizes bipartite graphs to any number of clusters","Uniform cross-cluster connectivity"],
+    cons: ["No intra-cluster edges","Group assignment based purely on insertion order"]
   },
   path: {
     title: "Path",
