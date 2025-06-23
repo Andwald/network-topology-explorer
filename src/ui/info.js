@@ -1,4 +1,3 @@
-// ui/info.js
 const topologyData = {
   "ring": {
     title: "Ring",

@@ -15,6 +15,47 @@ import { snapToGrid, updateGridNodePositions } from './utils/grid.js';
 import { exportToJSON, importFromJSON } from './utils/jsonIO.js';
 import { computeBoundingBox, downloadPNG, downloadSVG } from './utils/exporters.js';
 
+
+// Animationsspeed abhängig von Queue Länge einstellen
+export function adjustQueueDurations() {
+  const queue        = state.animation.queue;
+  const K            = queue.length;
+  const KEEP_LAST    = 5;
+  const FPS          = 60;
+  const TOTAL_FRAMES = 15 * FPS;      // Budget: 15 Sekunden
+  const BASE_DUR     = 10;            // wie in core/tasks.js
+  const sliderSpeed  = currentSpeed.get();
+
+  // Wie viele Frames würden alle Tasks in Slider-Speed benötigen?
+  const framesNeeded = Math.round(K * (BASE_DUR / sliderSpeed));
+  if (framesNeeded <= TOTAL_FRAMES) {
+    // Kein Verkürzen nötig: alle auf Slider-Speed
+    queue.forEach(task => {
+      task.duration = Math.max(1, Math.round(BASE_DUR / sliderSpeed));
+    });
+    return;
+  }
+
+  // Wir müssen verkürzen:
+  // Anzahl alter Tasks (ohne die letzten KEEP_LAST)
+  const M = Math.max(0, K - KEEP_LAST);
+
+  // Frames, die die letzten KEEP_LAST in Slider-Speed verbrauchen
+  const framesLast   = Math.round(KEEP_LAST * (BASE_DUR / sliderSpeed));
+  const remainFrames = TOTAL_FRAMES - framesLast;
+
+  // Auto-Speed so, dass M * (BASE_DUR/autoSpeed) == remainFrames
+  const autoSpeed = (M > 0 && remainFrames > 0)
+    ? (BASE_DUR * M) / remainFrames
+    : sliderSpeed;
+
+  // Dauer jedes Tasks neu setzen
+  queue.forEach((task, idx) => {
+    const sp = idx < M ? autoSpeed : sliderSpeed;
+    task.duration = Math.max(1, Math.round(BASE_DUR / sp));
+  });
+}
+
 // Animation Speed State und UI
 let speedValue = 1;
 const currentSpeed = { get: () => speedValue };
@@ -65,6 +106,7 @@ setupControls({
     showTopologyInfo(key);
     updateBottomControls();
     // Loop starten, um animierte Tasks abzuspielen
+    adjustQueueDurations()
     state.animation.running = true;
     startLoop();
   },
@@ -89,6 +131,7 @@ setupControls({
     );
 
     // UI aktualisieren und Animation weitermachen
+    adjustQueueDurations()
     updateBottomControls();
     state.animation.running = true;
     startLoop();
@@ -191,6 +234,7 @@ setupControls({
       // 7) UI neu zeichnen & Animation starten
       showTopologyInfo(state.topology);
       updateBottomControls();
+      adjustQueueDurations()
       state.animation.running = true;
       startLoop();
     });
@@ -205,9 +249,46 @@ setupControls({
   onExportSvg() {
     downloadSVG(state.nodes, state.edges, 10);
   },
+  onAddRandomNode() {
+    const count = state.nodes.length;
+    const container = document.getElementById('canvas-container');
+    const W = container.offsetWidth;
+    const H = container.offsetHeight;
+
+    // Bereichs-Faktor: 0–20 ⇒ 0.5, 20–50 ⇒ 0.5→1, ab 50 ⇒ 1
+    let frac;
+    if (count <= 20) frac = 0.5;
+    else if (count >= 50) frac = 1;
+    else frac = 0.5 + ((count - 20) / 30) * 0.5;
+
+    // Zufällige Koordinaten im oberen linken Bereich
+    const rawX = Math.random() * W * frac;
+    const rawY = Math.random() * H * frac;
+
+    // Auf Topologie-Grid o.ä. runden
+    const cfg = topologies[state.topology];
+    const { x, y } = cfg.snap(rawX, rawY);
+
+    // Knoten anlegen (push & Animation)
+    enqueueNodeTask(x, y, currentSpeed.get());
+
+    // Kanten-Deltas berechnen wie beim Klick
+    const newNode = state.nodes[state.nodes.length - 1];
+    const oldList = state.nodes.slice(0, -1);
+    const { removes, adds } = cfg.diffAdd(oldList, newNode);
+    removes.forEach(({ from, to }) => enqueueRemoveEdgeTask(from, to, currentSpeed.get()));
+    adds   .forEach(({ from, to }) => enqueueEdgeTask(from, to, currentSpeed.get()));
+
+    // Animation starten
+    adjustQueueDurations()
+    state.animation.running = true;
+    startLoop();
+    requestRedraw();
+  },
   onApplyAlgorithm() {
     applyAlgorithm(state, { k: state.knnK, speed: currentSpeed.get() });
     // Animation starten, damit die enqueuten Kantenanims ablaufen
+    adjustQueueDurations()
     state.animation.running = true;
     startLoop();
     requestRedraw();
@@ -216,5 +297,6 @@ setupControls({
 
 // Initialisierung
 showTopologyInfo(state.topology);
+adjustQueueDurations()
 updateBottomControls();
 requestRedraw();

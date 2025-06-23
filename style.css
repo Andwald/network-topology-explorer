@@ -179,6 +179,25 @@ html, body {
   color: #fca5a5;    /* Helles Rot (Red-300) */
 }
 
+
+/* Zufälligen-Knoten-Button */
+#randBtn {
+  display: block;
+  width: 100%;
+  margin: 0.5rem 0;
+  padding: 0.75rem;
+  font-size: 1rem;
+  background: #3b82f6;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: center;
+}
+#randBtn:hover {
+  background: #2563eb;
+}
+
 /* Icon-Grids */
 .selector-group { margin: 0.5rem 0; }
 .icon-grid {

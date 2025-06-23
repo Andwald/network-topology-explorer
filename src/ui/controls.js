@@ -11,7 +11,8 @@ export function setupControls({
   onImportJSON,
   onExportPng,
   onExportSvg,
-  onApplyAlgorithm
+  onApplyAlgorithm,
+  onAddRandomNode
 }) {
   // Verstecktes File-Input für Import
   const fileInput = document.createElement('input');
@@ -33,6 +34,7 @@ export function setupControls({
   document.getElementById('exportPngBtn').addEventListener('click', onExportPng);
   document.getElementById('exportSvgBtn').addEventListener('click', onExportSvg);
   document.getElementById('applyAlgoBtn').addEventListener('click', onApplyAlgorithm);
+  document.getElementById('randBtn').addEventListener('click', onAddRandomNode);
 
     // ─── Topology-Icons ────────────────────────────────────────
   const topoItems = [

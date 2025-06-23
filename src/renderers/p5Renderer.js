@@ -11,6 +11,7 @@ import {
   enqueueEdgeTask,
   enqueueRemoveEdgeTask
 } from '../core/tasks.js';
+import { adjustQueueDurations } from '../main.js';
 import { topologies } from '../topologies/index.js';
 import { drawHint } from '../ui/hint.js';
 import { drawNodes } from '../ui/nodes.js';
@@ -131,6 +132,7 @@ export function startRenderer({ speed }) {
         );
 
         // Animation starten
+        adjustQueueDurations()
         animation.running = true;
         p.loop();
       });
